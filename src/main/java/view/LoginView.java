@@ -2,6 +2,8 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import javax.swing.border.Border;
 import models.User;
 import models.Customer;
@@ -23,6 +25,8 @@ public class LoginView extends JPanel {
     public JLabel signUpLabel;
     private JTextField emailField;
     private JPasswordField passwordField;
+    private boolean isAnimating = false;
+    private JButton signInBtn;
 
     public LoginView() {
         setLayout(new BorderLayout());
@@ -121,8 +125,11 @@ public class LoginView extends JPanel {
         bottomLinks.add(recoveryLabel);
         cardPanel.add(bottomLinks);
 
+        // Sağ Panel: TransportPanel
+        rightPanel = new TransportPanel();
+
         // Sign In butonu
-        JButton signInBtn = modernButton("Sign In", new Color(236, 93, 87));
+        signInBtn = modernButton("Sign In", rightPanel.isBusMode() ? mainBlue : new Color(231, 76, 60));
         signInBtn.setBounds(40, 290, 320, 54);
         signInBtn.addActionListener(e -> {
             String email = emailField.getText();
@@ -159,7 +166,7 @@ public class LoginView extends JPanel {
                 if (topLevel instanceof AOOPProject) {
                     AOOPProject frame = (AOOPProject) topLevel;
                     if (user instanceof Admin) {
-                        frame.showAdminPanel((Admin) user);
+                        frame.showAdminPanel((Admin) user, rightPanel.isBusMode());
                     } else {
                         Customer customer = new Customer(user.getId(), user.getName(), "", user.getEmail(), user.getPassword());
                         if (rightPanel.isBusMode() == true) {
@@ -179,13 +186,102 @@ public class LoginView extends JPanel {
         cardHolder.setPreferredSize(new Dimension(480, 520));
         cardHolder.add(cardPanel);
         leftPanel.add(cardHolder, BorderLayout.CENTER);
-
-        // Sağ Panel: TransportPanel
-        rightPanel = new TransportPanel();
-        add(rightPanel, BorderLayout.EAST);
+        
+        // Add transport mode change listener
+        rightPanel.addTransportModeChangeListener(new TransportModeChangeListener() {
+            @Override
+            public void onTransportModeChanged(boolean isBusMode) {
+                if (!isAnimating) {
+                    animatePanelSwap();
+                }
+                // Update sign in button color based on transport mode
+                if (signInBtn != null) {
+                    ((RoundedButtonModern)signInBtn).setButtonColor(isBusMode ? mainBlue : new Color(231, 76, 60));
+                }
+            }
+        });
 
         // Ana Panel
         add(leftPanel, BorderLayout.WEST);
+        add(rightPanel, BorderLayout.EAST);
+    }
+
+    private void animatePanelSwap() {
+        isAnimating = true;
+        
+        // Get current positions
+        Point leftPos = leftPanel.getLocation();
+        Point rightPos = rightPanel.getLocation();
+        
+        // Create animation timer with smoother animation
+        Timer timer = new Timer(16, new ActionListener() {
+            private int step = 0;
+            private final int totalSteps = 40; // More steps for smoother animation
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (step < totalSteps) {
+                    // Calculate new positions using improved easing function
+                    double progress = (double) step / totalSteps;
+                    // Custom easing function for more natural motion
+                    double easedProgress;
+                    if (progress < 0.2) {
+                        // Start slow
+                        easedProgress = 5 * progress * progress;
+                    } else if (progress > 0.8) {
+                        // End slow
+                        easedProgress = 1 - 5 * (1 - progress) * (1 - progress);
+                    } else {
+                        // Middle fast
+                        easedProgress = 0.2 + 0.6 * (progress - 0.2) / 0.6;
+                    }
+                    
+                    int newLeftX = (int) (leftPos.x + (rightPos.x - leftPos.x) * easedProgress);
+                    int newRightX = (int) (rightPos.x + (leftPos.x - rightPos.x) * easedProgress);
+                    
+                    // Enhanced vertical movement with easing
+                    double verticalEase = Math.sin(progress * Math.PI);
+                    int verticalOffset = (int) (verticalEase * 15);
+                    
+                    // Add slight rotation effect
+                    double rotation = Math.sin(progress * Math.PI) * 5;
+                    
+                    // Apply transformations
+                    leftPanel.setLocation(newLeftX, leftPos.y + verticalOffset);
+                    rightPanel.setLocation(newRightX, rightPos.y - verticalOffset);
+                    
+                    // Apply subtle scaling effect
+                    double scale = 1.0 - Math.abs(Math.sin(progress * Math.PI)) * 0.05;
+                    leftPanel.setSize((int)(leftPanel.getWidth() * scale), leftPanel.getHeight());
+                    rightPanel.setSize((int)(rightPanel.getWidth() * scale), rightPanel.getHeight());
+                    
+                    step++;
+                    repaint();
+                } else {
+                    // Animation complete
+                    ((Timer) e.getSource()).stop();
+                    isAnimating = false;
+                    
+                    // Reset panel sizes
+                    leftPanel.setSize(leftPanel.getPreferredSize());
+                    rightPanel.setSize(rightPanel.getPreferredSize());
+                    
+                    // Update layout
+                    removeAll();
+                    if (rightPanel.isBusMode()) {
+                        add(leftPanel, BorderLayout.WEST);
+                        add(rightPanel, BorderLayout.EAST);
+                    } else {
+                        add(rightPanel, BorderLayout.WEST);
+                        add(leftPanel, BorderLayout.EAST);
+                    }
+                    revalidate();
+                    repaint();
+                }
+            }
+        });
+        
+        timer.start();
     }
 
     public JPanel getLeftPanel() { return leftPanel; }
@@ -286,7 +382,7 @@ public class LoginView extends JPanel {
 
     // Yuvarlatılmış Modern Button
     static class RoundedButtonModern extends JButton {
-        private final Color bgColor;
+        private Color bgColor;
         public RoundedButtonModern(String text, Color bgColor) {
             super(text);
             this.bgColor = bgColor;
@@ -298,6 +394,12 @@ public class LoginView extends JPanel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         }
+
+        public void setButtonColor(Color newColor) {
+            this.bgColor = newColor;
+            repaint();
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -313,4 +415,9 @@ public class LoginView extends JPanel {
             super.paint(g);
         }
     }
+}
+
+// Add this interface to TransportPanel class
+interface TransportModeChangeListener {
+    void onTransportModeChanged(boolean isBusMode);
 }

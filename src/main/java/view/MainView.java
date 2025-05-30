@@ -10,6 +10,8 @@ import java.util.HashSet;
 import models.Customer;
 import models.Voyage;
 import services.DatabaseService;
+import com.toedter.calendar.JDateChooser;
+import java.text.SimpleDateFormat;
 
 public class MainView extends JPanel {
     private JList<String> busList;
@@ -23,6 +25,9 @@ public class MainView extends JPanel {
     private JPanel cardListPanel;
     private boolean isBusMode;
     private JFrame mainFrame;
+    private JComboBox<String> originCombo, destCombo;
+    private JDateChooser dateChooser;
+    private JLabel noVoyagesLabel;
 
     public MainView(Customer customer, boolean isBusMode, JFrame mainFrame) {
         this.customer = customer;
@@ -35,29 +40,17 @@ public class MainView extends JPanel {
             allTrips = new ArrayList<>(DatabaseService.getAllFlightVoyages());
         }
 
-        // Kalkış ve varış noktalarını, tarihleri ve fiyat aralığını dinamik oluştur
-        Set<String> origins = new HashSet<>();
-        Set<String> destinations = new HashSet<>();
-        Set<String> dates = new HashSet<>();
-        double minPrice = Double.MAX_VALUE, maxPrice = Double.MIN_VALUE;
-        for (Voyage trip : allTrips) {
-            origins.add(trip.getOrigin());
-            destinations.add(trip.getDestination());
-            String date = trip.getStartTime().split(" ")[0];
-            dates.add(date);
-            if (trip.getPrice() < minPrice) minPrice = trip.getPrice();
-            if (trip.getPrice() > maxPrice) maxPrice = trip.getPrice();
-        }
-
         // Üst panel: sol (sign out), orta (başlık), sağ (toggle)
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
         
-        // Sol panel - Sign Out butonu
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        leftPanel.setOpaque(false);
+        // Sign out butonu
         JButton signOutBtn = new JButton("Sign Out");
-        signOutBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        signOutBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        signOutBtn.setForeground(Color.WHITE);
+        signOutBtn.setBackground(new Color(231, 76, 60));
+        signOutBtn.setBorderPainted(false);
+        signOutBtn.setFocusPainted(false);
         signOutBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         signOutBtn.addActionListener(e -> {
             if (mainFrame != null) {
@@ -67,33 +60,28 @@ public class MainView extends JPanel {
                 mainFrame.repaint();
             }
         });
-        leftPanel.add(signOutBtn);
-        headerPanel.add(leftPanel, BorderLayout.WEST);
-        
-        // Orta panel - Başlık
-        JPanel centerPanel = new JPanel(new GridBagLayout());
-        centerPanel.setOpaque(false);
+        headerPanel.add(signOutBtn, BorderLayout.WEST);
+
+        // Başlık
         dynamicTitle = new JLabel(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri", SwingConstants.CENTER);
-        dynamicTitle.setFont(new Font("Arial", Font.BOLD, 22));
-        centerPanel.add(dynamicTitle);
-        headerPanel.add(centerPanel, BorderLayout.CENTER);
-        
-        // Sağ panel - Toggle butonu
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        rightPanel.setOpaque(false);
-        JButton toggleButton = new JButton(isBusMode ? "Uçakları Göster" : "Otobüsleri Göster");
-        toggleButton.setFont(new Font("Arial", Font.BOLD, 14));
+        dynamicTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        headerPanel.add(dynamicTitle, BorderLayout.CENTER);
+
+        // Transport mode toggle
+        JToggleButton toggleButton = new JToggleButton(isBusMode ? "Switch to Airplane" : "Switch to Bus");
+        toggleButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        toggleButton.setForeground(Color.WHITE);
+        toggleButton.setBackground(isBusMode ? new Color(231, 76, 60) : new Color(52, 152, 219));
+        toggleButton.setBorderPainted(false);
+        toggleButton.setFocusPainted(false);
         toggleButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         toggleButton.addActionListener(e -> {
-            if (mainFrame != null) {
-                mainFrame.getContentPane().removeAll();
-                mainFrame.getContentPane().add(new MainView(customer, !isBusMode, mainFrame), BorderLayout.CENTER);
-                mainFrame.revalidate();
-                mainFrame.repaint();
+            if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
+                com.mycompany.aoopproject.AOOPProject frame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
+                frame.showMainView(new MainView(customer, !isBusMode, frame));
             }
         });
-        rightPanel.add(toggleButton);
-        headerPanel.add(rightPanel, BorderLayout.EAST);
+        headerPanel.add(toggleButton, BorderLayout.EAST);
         
         add(headerPanel, BorderLayout.NORTH);
 
@@ -107,42 +95,53 @@ public class MainView extends JPanel {
 
         // Filter panel (top)
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JComboBox<String> originBox = new JComboBox<>();
-        originBox.addItem("Tümü");
-        for (String o : origins) originBox.addItem(o);
-        JComboBox<String> destBox = new JComboBox<>();
-        destBox.addItem("Tümü");
-        for (String d : destinations) destBox.addItem(d);
-        JComboBox<String> dateBox = new JComboBox<>();
-        dateBox.addItem("Tümü");
-        for (String d : dates) dateBox.addItem(d);
-        JTextField minPriceField = new JTextField(String.valueOf((int)minPrice), 5);
-        JTextField maxPriceField = new JTextField(String.valueOf((int)maxPrice), 5);
-        filterPanel.add(new JLabel("Kalkış:"));
-        filterPanel.add(originBox);
-        filterPanel.add(new JLabel("Varış:"));
-        filterPanel.add(destBox);
-        filterPanel.add(new JLabel("Tarih:"));
-        filterPanel.add(dateBox);
-        filterPanel.add(new JLabel("Fiyat:"));
-        filterPanel.add(minPriceField);
-        filterPanel.add(new JLabel("-"));
-        filterPanel.add(maxPriceField);
-        tripsPanel.add(filterPanel, BorderLayout.NORTH);
+        filterPanel.setBackground(Color.WHITE);
 
-        // Search panel (under filters)
-        JPanel searchPanel = new JPanel(new BorderLayout(5, 5));
-        JTextField searchField = new JTextField();
-        JButton searchButton = new JButton("Ara");
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(searchButton, BorderLayout.EAST);
-        tripsPanel.add(searchPanel, BorderLayout.AFTER_LAST_LINE);
+        // City selection
+        String[] turkishCities = {
+            "Select City",
+            "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya", "Artvin", "Aydın", "Balıkesir",
+            "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli",
+            "Diyarbakır", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
+            "Hakkari", "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu", "Kayseri", "Kırklareli",
+            "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş",
+            "Nevşehir", "Niğde", "Ordu", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat",
+            "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak", "Aksaray", "Bayburt", "Karaman",
+            "Kırıkkale", "Batman", "Şırnak", "Bartın", "Ardahan", "Iğdır", "Yalova", "Karabük", "Kilis", "Osmaniye", "Düzce"
+        };
+
+        originCombo = new JComboBox<>(turkishCities);
+        destCombo = new JComboBox<>(turkishCities);
+        dateChooser = new JDateChooser();
+        dateChooser.setPreferredSize(new Dimension(200, 30));
+
+        filterPanel.add(new JLabel("Kalkış:"));
+        filterPanel.add(originCombo);
+        filterPanel.add(new JLabel("Varış:"));
+        filterPanel.add(destCombo);
+        filterPanel.add(new JLabel("Tarih:"));
+        filterPanel.add(dateChooser);
+
+        // Add action listeners for filtering
+        originCombo.addActionListener(e -> validateCities());
+        destCombo.addActionListener(e -> validateCities());
+        dateChooser.addPropertyChangeListener("date", e -> updateTripList());
+
+        tripsPanel.add(filterPanel, BorderLayout.NORTH);
 
         // Card list panel for trips
         cardListPanel = new JPanel();
         cardListPanel.setLayout(new BoxLayout(cardListPanel, BoxLayout.Y_AXIS));
+        cardListPanel.setBackground(Color.WHITE);
         JScrollPane scrollPane = new JScrollPane(cardListPanel);
         tripsPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // No voyages label
+        noVoyagesLabel = new JLabel("", SwingConstants.CENTER);
+        noVoyagesLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        noVoyagesLabel.setForeground(new Color(100, 100, 100));
+        noVoyagesLabel.setVisible(false);
+        cardListPanel.add(noVoyagesLabel);
 
         // Reservations panel (placeholder)
         reservationsPanel = new JPanel(new BorderLayout());
@@ -166,43 +165,76 @@ public class MainView extends JPanel {
         btnTrips.addActionListener(e -> switchTab("TRIPS"));
         btnReservations.addActionListener(e -> switchTab("RESERVATIONS"));
 
-        // Filter and search actions
-        Runnable updateList = () -> updateTripList(originBox, destBox, dateBox, minPriceField, maxPriceField, searchField);
-        originBox.addActionListener(e -> updateList.run());
-        destBox.addActionListener(e -> updateList.run());
-        dateBox.addActionListener(e -> updateList.run());
-        searchButton.addActionListener(e -> updateList.run());
-        minPriceField.addActionListener(e -> updateList.run());
-        maxPriceField.addActionListener(e -> updateList.run());
-
         // Show trips by default
         switchTab("TRIPS");
-        updateList.run();
+        updateTripList();
     }
 
-    private void updateTripList(JComboBox<String> originBox, JComboBox<String> destBox, JComboBox<String> dateBox, JTextField minPriceField, JTextField maxPriceField, JTextField searchField) {
-        String selectedOrigin = (String) originBox.getSelectedItem();
-        String selectedDest = (String) destBox.getSelectedItem();
-        String selectedDate = (String) dateBox.getSelectedItem();
-        double minPrice = 0, maxPrice = 9999;
-        try { minPrice = Double.parseDouble(minPriceField.getText().trim()); } catch (Exception ignored) {}
-        try { maxPrice = Double.parseDouble(maxPriceField.getText().trim()); } catch (Exception ignored) {}
-        String search = searchField.getText().trim().toLowerCase();
+    private void validateCities() {
+        String selectedOrigin = (String) originCombo.getSelectedItem();
+        String selectedDest = (String) destCombo.getSelectedItem();
+        
+        if (selectedOrigin.equals("Select City") || selectedDest.equals("Select City")) {
+            return; // Don't validate if either is not selected
+        }
+        
+        if (selectedOrigin.equals(selectedDest)) {
+            JOptionPane.showMessageDialog(this, "Kalkış ve varış şehirleri aynı olamaz!", "Uyarı", JOptionPane.WARNING_MESSAGE);
+            destCombo.setSelectedItem("Select City");
+        }
+        updateTripList();
+    }
+
+    private void updateTripList() {
+        String selectedOrigin = (String) originCombo.getSelectedItem();
+        String selectedDest = (String) destCombo.getSelectedItem();
+        java.util.Date selectedDate = dateChooser.getDate();
 
         cardListPanel.removeAll();
+        boolean hasMatchingTrips = false;
+
         for (Voyage trip : allTrips) {
             boolean matches = true;
-            if (!selectedOrigin.equals("Tümü") && !trip.getOrigin().equals(selectedOrigin)) matches = false;
-            if (!selectedDest.equals("Tümü") && !trip.getDestination().equals(selectedDest)) matches = false;
-            if (!selectedDate.equals("Tümü") && !trip.getStartTime().startsWith(selectedDate)) matches = false;
-            if (trip.getPrice() < minPrice || trip.getPrice() > maxPrice) matches = false;
-            String tripStr = trip.getFirm() + " - " + trip.getOrigin() + " -> " + trip.getDestination() + " - " + trip.getStartTime() + " - ₺" + trip.getPrice();
-            if (!search.isEmpty() && !tripStr.toLowerCase().contains(search)) matches = false;
+
+            // Check origin
+            if (!selectedOrigin.equals("Select City") && !trip.getOrigin().equals(selectedOrigin)) {
+                matches = false;
+            }
+
+            // Check destination
+            if (!selectedDest.equals("Select City") && !trip.getDestination().equals(selectedDest)) {
+                matches = false;
+            }
+
+            // Check date
+            if (selectedDate != null) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    String tripDate = trip.getStartTime().split(" ")[0];
+                    if (!tripDate.equals(sdf.format(selectedDate))) {
+                        matches = false;
+                    }
+                } catch (Exception e) {
+                    matches = false;
+                }
+            }
+
             if (matches) {
+                hasMatchingTrips = true;
                 cardListPanel.add(new TripCardPanel(trip, customer));
                 cardListPanel.add(Box.createVerticalStrut(10));
             }
         }
+
+        // Show/hide no voyages message
+        if (!hasMatchingTrips) {
+            String message = "Seçilen kriterlere uygun " + (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
+            noVoyagesLabel.setText(message);
+            noVoyagesLabel.setVisible(true);
+        } else {
+            noVoyagesLabel.setVisible(false);
+        }
+
         cardListPanel.revalidate();
         cardListPanel.repaint();
     }
@@ -212,7 +244,7 @@ public class MainView extends JPanel {
         CardLayout cl = (CardLayout) (mainPanel.getLayout());
         cl.show(mainPanel, name);
         if (name.equals("TRIPS")) {
-            dynamicTitle.setText("Otobüs Seferleri");
+            dynamicTitle.setText(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri");
         } else {
             dynamicTitle.setText("Rezervasyonlar");
         }
@@ -221,7 +253,4 @@ public class MainView extends JPanel {
     public JList<String> getBusList() {
         return busList;
     }
-
-    
-
 }

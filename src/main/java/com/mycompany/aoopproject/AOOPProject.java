@@ -43,16 +43,16 @@ public class AOOPProject extends JFrame {
         });
     }
 
-    private void showLogin() {
+    private void showRegister() {
         getContentPane().removeAll();
-        getContentPane().add(loginView, BorderLayout.CENTER);
+        getContentPane().add(registerView, BorderLayout.CENTER);
         revalidate();
         repaint();
     }
 
-    private void showRegister() {
+    public void showLogin() {
         getContentPane().removeAll();
-        getContentPane().add(registerView, BorderLayout.CENTER);
+        getContentPane().add(loginView, BorderLayout.CENTER);
         revalidate();
         repaint();
     }
@@ -65,11 +65,13 @@ public class AOOPProject extends JFrame {
     }
 
     // ADMIN PANEL FONKSİYONU
-    public void showAdminPanel(Admin admin) {
+    public void showAdminPanel(Admin admin, boolean isBusMode) {
         // Giriş yapan admin'den Customer nesnesi oluştur
         Customer customer = new Customer(admin.getId(), admin.getName(), "", admin.getEmail(), admin.getPassword());
         customer.setUser_type("Admin");
         AdminVoyagePanel adminPanel = new AdminVoyagePanel(admin, customer, this);
+        // Set initial transport mode
+        adminPanel.setTransportMode(isBusMode);
         getContentPane().removeAll();
         getContentPane().add(adminPanel, BorderLayout.CENTER);
         revalidate();

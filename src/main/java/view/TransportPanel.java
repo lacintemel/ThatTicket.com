@@ -2,7 +2,10 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransportPanel extends JPanel {
     private JLabel iconLabel;
@@ -23,10 +26,14 @@ public class TransportPanel extends JPanel {
     private int currentSloganIndex = 0;
     private float animationProgress = 0f;
     private Timer animationTimer;
+    private List<TransportModeChangeListener> listeners = new ArrayList<>();
+    private final Color busColor = new Color(52, 152, 219); // Original blue
+    private final Color planeColor = new Color(231, 76, 60); // Original red
 
     public TransportPanel() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(420, 520));
+        setBackground(busColor); // Initial color
 
         // Load icons
         try {
@@ -46,10 +53,11 @@ public class TransportPanel extends JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 // Button background gradient
+                Color currentColor = isBusMode ? busColor : planeColor;
                 GradientPaint gp = new GradientPaint(0, 0, 
-                    new Color(41, 128, 185), 
+                    currentColor.darker(), 
                     getWidth(), getHeight(), 
-                    new Color(52, 152, 219));
+                    currentColor);
                 g2.setPaint(gp);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
                 
@@ -107,11 +115,13 @@ public class TransportPanel extends JPanel {
         sloganLabel.setForeground(Color.WHITE);
         sloganLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Add toggle button action
+        // Add toggle button action with immediate effect
         toggleButton.addActionListener(e -> {
             isBusMode = !isBusMode;
             toggleButton.setText(isBusMode ? "Switch to Airplane" : "Switch to Bus");
-            startTransitionAnimation();
+            setBackground(isBusMode ? busColor : planeColor);
+            updateTransportMode();
+            notifyTransportModeChanged();
         });
 
         // Create center panel for icon and slogan
@@ -162,37 +172,11 @@ public class TransportPanel extends JPanel {
         timer.start();
     }
 
-    private void startTransitionAnimation() {
-        if (animationTimer != null) {
-            animationTimer.stop();
-        }
-        
-        animationProgress = 0f;
-        animationTimer = new Timer(16, e -> {
-            animationProgress += 0.1f;
-            if (animationProgress >= 1f) {
-                animationProgress = 1f;
-                animationTimer.stop();
-                updateTransportMode();
-            }
-            repaint();
-        });
-        animationTimer.start();
-    }
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Modern gradient background with animation
-        Color startColor = isBusMode ? new Color(41, 128, 185) : new Color(52, 152, 219);
-        Color endColor = isBusMode ? new Color(52, 152, 219) : new Color(41, 128, 185);
-        
-        GradientPaint gp = new GradientPaint(0, 0, startColor, getWidth(), getHeight(), endColor);
-        g2.setPaint(gp);
-        g2.fillRect(0, 0, getWidth(), getHeight());
         
         // Draw animated circles
         g2.setColor(new Color(255, 255, 255, 5));
@@ -237,5 +221,15 @@ public class TransportPanel extends JPanel {
 
     public boolean isBusMode() {
         return isBusMode;
+    }
+
+    public void addTransportModeChangeListener(TransportModeChangeListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyTransportModeChanged() {
+        for (TransportModeChangeListener listener : listeners) {
+            listener.onTransportModeChanged(isBusMode);
+        }
     }
 } 

@@ -19,21 +19,21 @@ import models.Voyage;
             setBackground(new Color(0,0,0,0));
 
             // Kart yüksekliğini sabit tut
-            setPreferredSize(new Dimension(600, 164)); // 140 + padding
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 164));
-            setMinimumSize(new Dimension(300, 164));
+            setPreferredSize(new Dimension(600, 180)); // Increased height for better spacing
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
+            setMinimumSize(new Dimension(300, 180));
 
             JPanel card = new JPanel(new BorderLayout());
             card.setBackground(Color.WHITE);
             card.setOpaque(true);
             card.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(32, new Color(230, 230, 230)),
-                        BorderFactory.createEmptyBorder(18, 28, 18, 28)
+                new RoundedBorder(16, new Color(230, 230, 230)),
+                BorderFactory.createEmptyBorder(20, 30, 20, 30)
             ));
             // Responsive: min width, no max width, sabit yükseklik
-            card.setPreferredSize(new Dimension(600, 140));
-            card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
-            card.setMinimumSize(new Dimension(300, 140));
+            card.setPreferredSize(new Dimension(600, 160));
+            card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
+            card.setMinimumSize(new Dimension(300, 160));
 
             // Admin kontrolleri için üst panel
             JPanel adminPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -122,64 +122,105 @@ import models.Voyage;
             leftPanel.setOpaque(false);
             // Firma adı
             JLabel firmLabel = new JLabel("<html><b>" + trip.getFirm() + "</b></html>");
-            firmLabel.setFont(new Font("Arial", Font.BOLD, 20));
+            firmLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
             leftPanel.add(firmLabel);
             // İkonlar
             JPanel iconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
             iconPanel.setOpaque(false);
-            iconPanel.add(new JLabel("❄️"));
-            iconPanel.add(new JLabel("📶"));
-            iconPanel.add(new JLabel("🔌"));
-            iconPanel.add(new JLabel("📺"));
+            
+            // Create a custom font for icons
+            Font iconFont = new Font("Segoe UI", Font.PLAIN, 16);
+            
+            JLabel tempIcon = new JLabel("❄");
+            tempIcon.setFont(iconFont);
+            tempIcon.setToolTipText("Air Conditioning");
+            iconPanel.add(tempIcon);
+            
+            JLabel wifiIcon = new JLabel("📶");
+            wifiIcon.setFont(iconFont);
+            wifiIcon.setToolTipText("WiFi");
+            iconPanel.add(wifiIcon);
+            
+            JLabel powerIcon = new JLabel("⚡");
+            powerIcon.setFont(iconFont);
+            powerIcon.setToolTipText("Power Outlet");
+            iconPanel.add(powerIcon);
+            
+            JLabel entIcon = new JLabel("🎬");
+            entIcon.setFont(iconFont);
+            entIcon.setToolTipText("Entertainment");
+            iconPanel.add(entIcon);
+            
+            JLabel restIcon = new JLabel("🚻");
+            restIcon.setFont(iconFont);
+            restIcon.setToolTipText("Restroom");
+            iconPanel.add(restIcon);
+            
+            JLabel refreshIcon = new JLabel("☕");
+            refreshIcon.setFont(iconFont);
+            refreshIcon.setToolTipText("Refreshments");
+            iconPanel.add(refreshIcon);
+            
             // Seat arrangement and icon
             JPanel seatIconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
             seatIconPanel.setOpaque(false);
             JLabel seatIcon = new JLabel("💺");
+            seatIcon.setFont(iconFont);
             JLabel seatLabel = new JLabel(trip.getSeatArrangement());
-            seatLabel.setFont(new Font("Arial", Font.BOLD, 14));
-            seatLabel.setForeground(new Color(60, 60, 120));
+            seatLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            seatLabel.setForeground(new Color(52, 152, 219));
             seatIconPanel.add(seatIcon);
             seatIconPanel.add(seatLabel);
+            
             // Wrap seatIconPanel in a container
             JPanel seatContainerPanel = new JPanel(new BorderLayout());
-            seatContainerPanel.setBackground(Color.WHITE);
+            seatContainerPanel.setBackground(new Color(52, 152, 219, 10));
             seatContainerPanel.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(16, new Color(230,230,230)),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+                new RoundedBorder(12, new Color(52, 152, 219, 30)),
+                BorderFactory.createEmptyBorder(5, 12, 5, 12)
             ));
             seatContainerPanel.add(seatIconPanel, BorderLayout.CENTER);
             iconPanel.add(seatContainerPanel);
             leftPanel.add(iconPanel);
             
             // Saatler ve şehirler
-            JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
+            JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 24, 0));
             timePanel.setOpaque(false);
+            
+            // Departure panel
             JPanel depPanel = new JPanel();
             depPanel.setOpaque(false);
             depPanel.setLayout(new BoxLayout(depPanel, BoxLayout.Y_AXIS));
             JLabel depLabel = new JLabel("Departure");
-            depLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+            depLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             depLabel.setForeground(new Color(120,120,120));
             depPanel.add(depLabel);
             JLabel depTime = new JLabel("<html><b>" + (trip.getStartTime().split(" ").length > 1 ? trip.getStartTime().split(" ")[1] : trip.getStartTime()) + "</b></html>");
-            depTime.setFont(new Font("Arial", Font.BOLD, 18));
+            depTime.setFont(new Font("Segoe UI", Font.BOLD, 20));
             depPanel.add(depTime);
             JLabel depCity = new JLabel(trip.getOrigin());
-            depCity.setFont(new Font("Arial", Font.PLAIN, 15));
+            depCity.setFont(new Font("Segoe UI", Font.PLAIN, 16));
             depPanel.add(depCity);
             timePanel.add(depPanel);
+
+            // Transport icon between cities
+            JLabel transportIcon = new JLabel(trip.getType().equalsIgnoreCase("Bus") ? "🚌" : "✈");
+            transportIcon.setFont(iconFont);
+            timePanel.add(transportIcon);
+
+            // Arrival panel
             JPanel arrPanel = new JPanel();
             arrPanel.setOpaque(false);
             arrPanel.setLayout(new BoxLayout(arrPanel, BoxLayout.Y_AXIS));
             JLabel arrLabel = new JLabel("Arrival");
-            arrLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+            arrLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             arrLabel.setForeground(new Color(120,120,120));
             arrPanel.add(arrLabel);
             JLabel arrTime = new JLabel("<html><b>" + (trip.getArrivalTime().split(" ").length > 1 ? trip.getArrivalTime().split(" ")[1] : trip.getArrivalTime()) + "</b></html>");
-            arrTime.setFont(new Font("Arial", Font.BOLD, 18));
+            arrTime.setFont(new Font("Segoe UI", Font.BOLD, 20));
             arrPanel.add(arrTime);
             JLabel arrCity = new JLabel(trip.getDestination());
-            arrCity.setFont(new Font("Arial", Font.PLAIN, 15));
+            arrCity.setFont(new Font("Segoe UI", Font.PLAIN, 16));
             arrPanel.add(arrCity);
             timePanel.add(arrPanel);
             leftPanel.add(timePanel);
@@ -191,14 +232,17 @@ import models.Voyage;
             // Fiyat sağ üstte
             JPanel pricePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
             pricePanel.setOpaque(false);
-            JLabel priceLabel = new JLabel("₺" + (int)trip.getPrice());
-            priceLabel.setFont(new Font("Arial", Font.BOLD, 22));
-            priceLabel.setForeground(new Color(60, 60, 120));
+            JLabel priceIcon = new JLabel("₺");
+            priceIcon.setFont(iconFont);
+            JLabel priceLabel = new JLabel(" " + (int)trip.getPrice());
+            priceLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+            priceLabel.setForeground(new Color(52, 152, 219));
+            pricePanel.add(priceIcon);
+            pricePanel.add(priceLabel);
             JLabel oldPriceLabel = new JLabel("₺" + (int)(trip.getPrice() * 1.1));
-            oldPriceLabel.setFont(new Font("Arial", Font.PLAIN, 15));
+            oldPriceLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
             oldPriceLabel.setForeground(new Color(180,180,180));
             oldPriceLabel.setText("<html><strike>" + oldPriceLabel.getText() + "</strike></html>");
-            pricePanel.add(priceLabel);
             pricePanel.add(Box.createHorizontalStrut(8));
             pricePanel.add(oldPriceLabel);
             rightPanel.add(pricePanel, BorderLayout.NORTH);
@@ -208,14 +252,14 @@ import models.Voyage;
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(0, 120, 255));
+                    g2.setColor(new Color(52, 152, 219));
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                     super.paintComponent(g2);
                     g2.dispose();
                 }
             };
+            buyButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
             buyButton.setForeground(Color.WHITE);
-            buyButton.setFont(new Font("Arial", Font.BOLD, 16));
             buyButton.setBorderPainted(false);
             buyButton.setFocusPainted(false);
             buyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
