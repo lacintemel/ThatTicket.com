@@ -18,12 +18,12 @@ public class VoyageFactory {
     
     public static Voyage createVoyage(int voyageId, String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement) {
         Voyage voyage;
-        if (type.equalsIgnoreCase("bus")) {
+        if (type.equalsIgnoreCase("Bus")) {
             voyage = new BusTrip(voyageId, firm, origin, destination, startTime, arrivalTime, seatCount, price, seatArrangement);
             Voyage.getVoyageHashMap().put(voyageId, voyage);
             return voyage;
         }
-        if (type.equalsIgnoreCase("flight")) {
+        if (type.equalsIgnoreCase("Flight")) {
             voyage = new FlightTrip(voyageId, firm, origin, destination, startTime, arrivalTime, seatCount, price, seatArrangement);
             Voyage.getVoyageHashMap().put(voyageId, voyage);
             return voyage;

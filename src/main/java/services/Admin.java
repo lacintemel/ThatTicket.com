@@ -101,4 +101,11 @@ public class Admin extends User implements Subject{
         }
     }
     
+    public static Admin getAdminByEmail(String email) {
+        User user = User.getUsersHashMap().get(email);
+        if (user instanceof Admin) {
+            return (Admin) user;
+        }
+        return null;
+    }
 }

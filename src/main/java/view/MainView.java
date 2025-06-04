@@ -10,6 +10,7 @@ import java.util.HashSet;
 import models.Customer;
 import models.Voyage;
 import services.DatabaseService;
+import services.Admin;
 import com.toedter.calendar.JDateChooser;
 import java.text.SimpleDateFormat;
 
@@ -82,7 +83,7 @@ public class MainView extends JPanel {
             }
         });
         headerPanel.add(toggleButton, BorderLayout.EAST);
-        
+
         add(headerPanel, BorderLayout.NORTH);
 
         // Main panel (center area)
@@ -158,6 +159,27 @@ public class MainView extends JPanel {
         JButton btnTrips = new JButton("Seyahatler");
         JButton btnReservations = new JButton("Rezervasyonlar");
         tabbar.add(btnTrips);
+        
+        // Admin için "Yeni Sefer Ekle" butonu
+        if (customer.getUser_type().equals("Admin")) {
+            JButton addVoyageBtn = new JButton("Yeni Sefer Ekle");
+            addVoyageBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            addVoyageBtn.setForeground(Color.WHITE);
+            addVoyageBtn.setBackground(new Color(46, 204, 113));
+            addVoyageBtn.setBorderPainted(false);
+            addVoyageBtn.setFocusPainted(false);
+            addVoyageBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            addVoyageBtn.setPreferredSize(new Dimension(150, 40));
+            addVoyageBtn.addActionListener(e -> {
+                if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
+                    com.mycompany.aoopproject.AOOPProject frame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
+                    Admin admin = new Admin(customer.getId(), "1111", customer.getName(), customer.getEmail(), customer.getPassword());
+                    frame.showAdminPanel(admin, true);
+                }
+            });
+            tabbar.add(addVoyageBtn);
+        }
+        
         tabbar.add(btnReservations);
         add(tabbar, BorderLayout.SOUTH);
 

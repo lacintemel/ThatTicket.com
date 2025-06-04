@@ -18,12 +18,16 @@ public class CancelReservationCommand implements Command{
     private Customer customer;
     private Voyage voyage;
     private final int seatNumber;
-    private ArrayList<Seat> customerSeats = customer.getCustomersVoyageHashMap().get(voyage);
+    private ArrayList<Seat> customerSeats;
 
     public CancelReservationCommand(Customer customer, Voyage voyage, int seatNumber) {
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer cannot be null");
+        }
         this.customer = customer;
         this.voyage = voyage;
         this.seatNumber = seatNumber;
+        this.customerSeats = customer.getCustomersVoyageHashMap().get(voyage);
     }
 
     @Override

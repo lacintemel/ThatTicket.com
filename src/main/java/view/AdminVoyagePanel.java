@@ -90,11 +90,12 @@ public class AdminVoyagePanel extends JPanel {
         typeCombo = new JComboBox<>(new String[]{"Bus", "Flight"});
         firmField = new JTextField(20);
         planeNameCombo = new JComboBox<>(new String[]{"Boeing 737", "Airbus A320", "Embraer 190"});
-        seatArrangementCombo = new JComboBox<>(new String[]{"2+1", "2+2", "3+3"});
+        seatArrangementCombo = new JComboBox<>(new String[]{"2+1", "2+2"}); // Default bus arrangements
         originCombo = new JComboBox<>(turkishCities);
         destCombo = new JComboBox<>(turkishCities);
         startDateChooser = new JDateChooser();
         startTimeSpinner = new JSpinner(new SpinnerDateModel());
+        arrivalDateChooser = new JDateChooser();
         arrivalTimeSpinner = new JSpinner(new SpinnerDateModel());
         seatCountSpinner = new JSpinner(new SpinnerNumberModel(30, 1, 100, 1));
         priceSpinner = new JSpinner(new SpinnerNumberModel(100.0, 0.0, 10000.0, 10.0));
@@ -109,6 +110,9 @@ public class AdminVoyagePanel extends JPanel {
         arrivalDateLabel = new JLabel("Varış Tarihi:");
         arrivalTimeLabel = new JLabel("Varış Saati:");
         seatArrangementLabel = new JLabel("Koltuk Düzeni:");
+        seatCountLabel = new JLabel("Koltuk Sayısı:");
+        priceLabel = new JLabel("Fiyat:");
+
         // Set initial states and fonts for components
         typeCombo.setSelectedItem(isBusMode ? "Bus" : "Flight");
         typeCombo.setFont(labelFont);
@@ -128,6 +132,8 @@ public class AdminVoyagePanel extends JPanel {
         startTimeSpinner.setEditor(startTimeEditor);
         startTimeSpinner.setPreferredSize(new Dimension(200, 30));
         startTimeSpinner.setFont(labelFont);
+        arrivalDateChooser.setPreferredSize(new Dimension(200, 30));
+        arrivalDateChooser.setFont(labelFont);
         JSpinner.DateEditor arrivalTimeEditor = new JSpinner.DateEditor(arrivalTimeSpinner, "HH:mm");
         arrivalTimeSpinner.setEditor(arrivalTimeEditor);
         arrivalTimeSpinner.setPreferredSize(new Dimension(200, 30));
@@ -142,14 +148,21 @@ public class AdminVoyagePanel extends JPanel {
             if (firmField != null) firmField.setVisible(!isFlight);
             if (planeNameCombo != null) planeNameCombo.setVisible(isFlight);
             if (seatArrangementCombo != null) {
-                seatArrangementCombo.setEnabled(!isFlight);
+                // Update seat arrangement options based on type
                 if (isFlight) {
+                    seatArrangementCombo.removeAllItems();
+                    seatArrangementCombo.addItem("3+3");
                     seatArrangementCombo.setSelectedItem("3+3");
+                    seatArrangementCombo.setEnabled(false);
                     if (saveButton != null) {
                         saveButton.setText(voyageToUpdate == null ? "✈ Sefer Oluştur" : "✈ Güncelle");
                     }
                 } else {
+                    seatArrangementCombo.removeAllItems();
+                    seatArrangementCombo.addItem("2+1");
+                    seatArrangementCombo.addItem("2+2");
                     seatArrangementCombo.setSelectedItem("2+1");
+                    seatArrangementCombo.setEnabled(true);
                     if (saveButton != null) {
                         saveButton.setText(voyageToUpdate == null ? "🚌 Sefer Oluştur" : "🚌 Güncelle");
                     }
@@ -206,61 +219,60 @@ public class AdminVoyagePanel extends JPanel {
 
         // Add components to the form panel
         gbc.gridx = 0; gbc.gridy = 0;
-        if (typeLabel != null) formPanel.add(typeLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 0;
-        if (typeCombo != null) formPanel.add(typeCombo, gbc);
+        formPanel.add(typeLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(typeCombo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1;
-        if (firmLabel != null) formPanel.add(firmLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 1;
-        if (firmField != null) formPanel.add(firmField, gbc);
-        gbc.gridx = 1; gbc.gridy = 1;
-        if (planeNameCombo != null) formPanel.add(planeNameCombo, gbc); // planeNameCombo shares the same gridx, gridy as firmField
+        formPanel.add(firmLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(firmField, gbc);
+        formPanel.add(planeNameCombo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2;
-        if (originLabel != null) formPanel.add(originLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 2;
-        if (originCombo != null) formPanel.add(originCombo, gbc);
+        formPanel.add(originLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(originCombo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3;
-        if (destLabel != null) formPanel.add(destLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 3;
-        if (destCombo != null) formPanel.add(destCombo, gbc);
+        formPanel.add(destLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(destCombo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 4;
-        if (startDateLabel != null) formPanel.add(startDateLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 4;
-        if (startDateChooser != null) formPanel.add(startDateChooser, gbc);
+        formPanel.add(startDateLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(startDateChooser, gbc);
 
         gbc.gridx = 0; gbc.gridy = 5;
-        if (startTimeLabel != null) formPanel.add(startTimeLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 5;
-        if (startTimeSpinner != null) formPanel.add(startTimeSpinner, gbc);
+        formPanel.add(startTimeLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(startTimeSpinner, gbc);
 
         gbc.gridx = 0; gbc.gridy = 6;
-        if (arrivalDateLabel != null) formPanel.add(arrivalDateLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 6;
-        if (arrivalDateChooser != null) formPanel.add(arrivalDateChooser, gbc);
+        formPanel.add(arrivalDateLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(arrivalDateChooser, gbc);
 
         gbc.gridx = 0; gbc.gridy = 7;
-        if (arrivalTimeLabel != null) formPanel.add(arrivalTimeLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 7;
-        if (arrivalTimeSpinner != null) formPanel.add(arrivalTimeSpinner, gbc);
+        formPanel.add(arrivalTimeLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(arrivalTimeSpinner, gbc);
 
         gbc.gridx = 0; gbc.gridy = 8;
-        if (seatArrangementLabel != null) formPanel.add(seatArrangementLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 8;
-        if (seatArrangementCombo != null) formPanel.add(seatArrangementCombo, gbc);
+        formPanel.add(seatArrangementLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(seatArrangementCombo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 9;
-        if (seatCountLabel != null) formPanel.add(seatCountLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 9;
-        if (seatCountSpinner != null) formPanel.add(seatCountSpinner, gbc);
+        formPanel.add(seatCountLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(seatCountSpinner, gbc);
 
         gbc.gridx = 0; gbc.gridy = 10;
-        if (priceLabel != null) formPanel.add(priceLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 10;
-        if (priceSpinner != null) formPanel.add(priceSpinner, gbc);
+        formPanel.add(priceLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(priceSpinner, gbc);
 
         // Eğer güncelleme modundaysa, mevcut verileri doldur
         if (voyageToUpdate != null) {
@@ -275,8 +287,8 @@ public class AdminVoyagePanel extends JPanel {
                 java.util.Date startDate = sdf.parse(voyageToUpdate.getStartTime());
                 startDateChooser.setDate(startDate);
                 startTimeSpinner.setValue(startDate);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
             
             // Parse and set the arrival time
@@ -285,17 +297,32 @@ public class AdminVoyagePanel extends JPanel {
                 java.util.Date arrivalDate = sdf.parse(voyageToUpdate.getArrivalTime());
                 arrivalDateChooser.setDate(arrivalDate);
                 arrivalTimeSpinner.setValue(arrivalDate);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
             
             seatCountSpinner.setValue(voyageToUpdate.getSeatCount());
             priceSpinner.setValue(voyageToUpdate.getPrice());
-            seatArrangementCombo.setSelectedItem(voyageToUpdate.getSeatArrangement());
-            seatArrangementCombo.setEnabled(!typeCombo.getSelectedItem().equals("Flight")); // Enable/disable based on type
+            
+            // Set seat arrangement based on type
+            if (voyageToUpdate.getType().equals("Flight")) {
+                seatArrangementCombo.removeAllItems();
+                seatArrangementCombo.addItem("3+3");
+                seatArrangementCombo.setSelectedItem("3+3");
+                seatArrangementCombo.setEnabled(false);
+            } else {
+                seatArrangementCombo.removeAllItems();
+                seatArrangementCombo.addItem("2+1");
+                seatArrangementCombo.addItem("2+2");
+                seatArrangementCombo.setSelectedItem(voyageToUpdate.getSeatArrangement());
+                seatArrangementCombo.setEnabled(true);
+            }
         } else {
             // For new voyages, set default values
             typeCombo.setSelectedItem("Bus");
+            seatArrangementCombo.removeAllItems();
+            seatArrangementCombo.addItem("2+1");
+            seatArrangementCombo.addItem("2+2");
             seatArrangementCombo.setSelectedItem("2+1");
             updateSeatCount();
         }
@@ -328,10 +355,18 @@ public class AdminVoyagePanel extends JPanel {
             
             // Format dates and times
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-            String startTime = sdf.format(startDateChooser.getDate()) + " " + 
-                             sdf.format(startTimeSpinner.getValue()).split(" ")[1];
-            String arrivalTime = sdf.format(arrivalDateChooser.getDate()) + " " + 
-                               sdf.format(arrivalTimeSpinner.getValue()).split(" ")[1];
+            String startTime = "";
+            String arrivalTime = "";
+            
+            if (startDateChooser.getDate() != null && startTimeSpinner.getValue() != null) {
+                startTime = sdf.format(startDateChooser.getDate()) + " " + 
+                           sdf.format(startTimeSpinner.getValue()).split(" ")[1];
+            }
+            
+            if (arrivalDateChooser.getDate() != null && arrivalTimeSpinner.getValue() != null) {
+                arrivalTime = sdf.format(arrivalDateChooser.getDate()) + " " + 
+                             sdf.format(arrivalTimeSpinner.getValue()).split(" ")[1];
+            }
             
             int seatCount = (int) seatCountSpinner.getValue();
             double price = (double) priceSpinner.getValue();
@@ -349,6 +384,7 @@ public class AdminVoyagePanel extends JPanel {
             }
 
             if (startDateChooser.getDate() == null || arrivalDateChooser.getDate() == null || 
+                startTimeSpinner.getValue() == null || arrivalTimeSpinner.getValue() == null ||
                 price <= 0) {
                 JOptionPane.showMessageDialog(this, "Lütfen gerekli alanları doldurun!", "Hata", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -361,9 +397,7 @@ public class AdminVoyagePanel extends JPanel {
 
             if (voyageToUpdate == null) {
                 // Yeni sefer oluştur
-                int newVoyageId = Voyage.getVoyageHashMap().size() + 1; // Yeni ID oluştur
-                Voyage newVoyage = VoyageFactory.createVoyage(
-                    newVoyageId,
+                int newVoyageId = services.DatabaseService.addVoyage(
                     type,
                     firm,
                     origin,
@@ -374,29 +408,94 @@ public class AdminVoyagePanel extends JPanel {
                     price,
                     seatArrangement
                 );
-                AddVoyageCommand addCmd = new AddVoyageCommand(newVoyage, admin);
-                CommandCaller caller = new CommandCaller();
-                caller.executeCommand(addCmd);
-                // Veritabanına ekle
-                services.DatabaseService.addVoyageToDB(newVoyage);
+                
+                if (newVoyageId != -1) {
+                    try {
+                        Voyage newVoyage = VoyageFactory.createVoyage(
+                            newVoyageId,
+                            type,
+                            firm,
+                            origin,
+                            destination,
+                            startTime,
+                            arrivalTime,
+                            seatCount,
+                            price,
+                            seatArrangement
+                        );
+                        
+                        if (newVoyage != null) {
+                            AddVoyageCommand addCmd = new AddVoyageCommand(newVoyage, admin);
+                            CommandCaller caller = new CommandCaller();
+                            caller.executeCommand(addCmd);
+                            
+                            // Show success message
+                            JOptionPane.showMessageDialog(this, 
+                                "Sefer başarıyla eklendi!", 
+                                "Başarılı", 
+                                JOptionPane.INFORMATION_MESSAGE);
+                                
+                            // Ana ekrana dön
+                            if (mainFrame instanceof AOOPProject) {
+                                ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(this, 
+                                "Sefer oluşturulurken bir hata oluştu!", 
+                                "Hata", 
+                                JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(this, 
+                            "Sefer eklendi fakat arayüz güncellenirken bir hata oluştu. Lütfen ana sayfaya dönüp seferleri kontrol edin.", 
+                            "Uyarı", 
+                            JOptionPane.WARNING_MESSAGE);
+                            
+                        // Ana ekrana dön
+                        if (mainFrame instanceof AOOPProject) {
+                            ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
+                        }
+                    }
+                } else {
+                    // Ana ekrana dön
+                    if (mainFrame instanceof AOOPProject) {
+                        ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
+                    }
+                }
             } else {
                 // Mevcut seferi güncelle
-                voyageToUpdate.setType(type);
-                voyageToUpdate.setFirm(firm);
-                voyageToUpdate.setOrigin(origin);
-                voyageToUpdate.setDestination(destination);
-                voyageToUpdate.setStartTime(startTime);
-                voyageToUpdate.setArrivalTime(arrivalTime);
-                voyageToUpdate.setSeatCount(seatCount);
-                voyageToUpdate.setPrice(price);
-                voyageToUpdate.setSeatArrangement(seatArrangement);
-                // Veritabanını güncelle
-                services.DatabaseService.updateVoyageInDB(voyageToUpdate);
-            }
-
-            // Ana ekrana dön
-            if (mainFrame instanceof AOOPProject) {
-                ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
+                try {
+                    voyageToUpdate.setType(type);
+                    voyageToUpdate.setFirm(firm);
+                    voyageToUpdate.setOrigin(origin);
+                    voyageToUpdate.setDestination(destination);
+                    voyageToUpdate.setStartTime(startTime);
+                    voyageToUpdate.setArrivalTime(arrivalTime);
+                    voyageToUpdate.setSeatCount(seatCount);
+                    voyageToUpdate.setPrice(price);
+                    voyageToUpdate.setSeatArrangement(seatArrangement);
+                    
+                    // Veritabanını güncelle
+                    services.DatabaseService.updateVoyageInDB(voyageToUpdate);
+                    
+                    // Show success message
+                    JOptionPane.showMessageDialog(this, 
+                        "Sefer başarıyla güncellendi!", 
+                        "Başarılı", 
+                        JOptionPane.INFORMATION_MESSAGE);
+                        
+                    // Ana ekrana dön
+                    if (mainFrame instanceof AOOPProject) {
+                        ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
+                    }
+                } catch (Exception ex2) {
+                    ex2.printStackTrace();
+                    JOptionPane.showMessageDialog(this, 
+                        "Sefer güncellenirken bir hata oluştu!", 
+                        "Hata", 
+                        JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 
@@ -414,13 +513,15 @@ public class AdminVoyagePanel extends JPanel {
     private void updateSeatCount() {
         if (typeCombo.getSelectedItem().equals("Bus")) {
             String arrangement = (String) seatArrangementCombo.getSelectedItem();
-            switch (arrangement) {
-                case "2+1":
-                    seatCountSpinner.setValue(45);
-                    break;
-                case "2+2":
-                    seatCountSpinner.setValue(48);
-                    break;
+            if (arrangement != null) {
+                switch (arrangement) {
+                    case "2+1":
+                        seatCountSpinner.setValue(37); // 13 single + 12*2 double = 37 seats
+                        break;
+                    case "2+2":
+                        seatCountSpinner.setValue(46); // 2+2 arrangement: 46 seats
+                        break;
+                }
             }
         } else if (typeCombo.getSelectedItem().equals("Flight")) {
             String planeType = (String) planeNameCombo.getSelectedItem();

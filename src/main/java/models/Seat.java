@@ -32,7 +32,7 @@ public class Seat {
         this.takenByWho = null;
     }
 
-    public User getTakenByWho() {
+    public Customer getTakenByWho() {
         return takenByWho;
     }
 

@@ -22,13 +22,13 @@ public class AddVoyageCommand implements Command{
 
     @Override
     public void execute() {
-        Voyage.getVoyageHashMap().put(voyage.getId(), voyage);
+        Voyage.getVoyageHashMap().put(voyage.getVoyageId(), voyage);
         admin.notifyObservers(voyage);
     }
 
     @Override
     public void undo() {
-        Voyage.getVoyageHashMap().remove(voyage.getId());
+        Voyage.getVoyageHashMap().remove(voyage.getVoyageId());
     }
     
     

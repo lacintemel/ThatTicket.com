@@ -3,6 +3,7 @@ package view;
 import services.DatabaseService;
 import models.Customer;
 import models.Voyage;
+import models.Seat;
 import commands.ReservationCommand;
 import commands.CommandCaller;
 
@@ -10,6 +11,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SeatSelectionPanel extends JPanel {
     private int voyageId;
@@ -19,17 +22,27 @@ public class SeatSelectionPanel extends JPanel {
     private JButton[] seatButtons;
     private static ImageIcon seatIcon;
     private CommandCaller commandCaller;
+    private Voyage voyage;
+    private Map<Integer, Seat> seats;
 
     public SeatSelectionPanel(int voyageId, int seatCount, String seatArrangement, Customer customer) {
         this.voyageId = voyageId;
         this.seatArrangement = seatArrangement;
         this.customer = customer;
         this.commandCaller = new CommandCaller();
+        this.seats = new HashMap<>();
+        
+        // Initialize seats
+        for (int i = 1; i <= seatCount; i++) {
+            Seat seat = new Seat(voyageId + i, i);
+            seats.put(i, seat);
+        }
+        
         // Calculate seatCount based on seatArrangement
         if (seatArrangement.equals("2+2")) {
-            this.seatCount = 46;
+            this.seatCount = 46; // 2+2 arrangement: 46 seats
         } else if (seatArrangement.equals("2+1")) {
-            this.seatCount = 37;
+            this.seatCount = 37; // 2+1 arrangement: 13 single + 12*2 double = 37 seats
         } else {
             this.seatCount = 180; // Default for flights
         }
@@ -39,8 +52,13 @@ public class SeatSelectionPanel extends JPanel {
         // Koltuk ikonu bir kez yükle
         if (seatIcon == null) {
             try {
-                seatIcon = new ImageIcon(new URL("https://img.icons8.com/external-goofy-flat-kerismaker/96/external-Seat-car-auto-parts-goofy-flat-kerismaker.png"));
+                URL iconUrl = new URL("https://img.icons8.com/external-goofy-flat-kerismaker/96/external-Seat-car-auto-parts-goofy-flat-kerismaker.png");
+                ImageIcon tempIcon = new ImageIcon(iconUrl);
+                if (tempIcon.getImage() != null) {
+                    seatIcon = tempIcon;
+                }
             } catch (Exception e) {
+                System.err.println("Failed to load seat icon: " + e.getMessage());
                 seatIcon = null;
             }
         }
@@ -50,7 +68,11 @@ public class SeatSelectionPanel extends JPanel {
         add(title, BorderLayout.NORTH);
 
         JPanel seatGrid = createSeatGrid();
-        add(seatGrid, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(seatGrid);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(null);
+        add(scrollPane, BorderLayout.CENTER);
 
         // İptal butonu
         JButton cancelButton = new JButton("İptal") {
@@ -94,26 +116,104 @@ public class SeatSelectionPanel extends JPanel {
         List<Integer> reserved = DatabaseService.getReservedSeats(voyageId);
         System.out.println("Seat count: " + seatCount + ", Reserved seats: " + reserved);
         int seatNum = 1;
-        for (int r = 0; r < rows; r++) {
-            JPanel rowPanel = new JPanel();
-            rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.X_AXIS));
-            rowPanel.setOpaque(false);
-            int left = seatsPerRow == 3 ? 2 : seatsPerRow / 2;
-            int right = seatsPerRow - left;
-            // Sol koltuklar
-            for (int i = 0; i < left && seatNum <= seatCount; i++, seatNum++) {
+        
+        // For bus arrangement
+        if (seatArrangement.equals("2+1")) {
+            for (int r = 0; r < 13; r++) {
+                JPanel rowPanel = new JPanel();
+                rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.X_AXIS));
+                rowPanel.setOpaque(false);
+                
+                // Single seat on left
                 rowPanel.add(createSeatButton(seatNum, reserved.contains(seatNum)));
                 rowPanel.add(Box.createHorizontalStrut(6));
+                
+                // Corridor space
+                rowPanel.add(Box.createHorizontalStrut(24));
+                
+                // Double seats on right
+                JPanel doubleSeatsPanel = new JPanel();
+                doubleSeatsPanel.setLayout(new BoxLayout(doubleSeatsPanel, BoxLayout.Y_AXIS));
+                doubleSeatsPanel.setOpaque(false);
+                
+                JPanel seatsRow = new JPanel();
+                seatsRow.setLayout(new BoxLayout(seatsRow, BoxLayout.X_AXIS));
+                seatsRow.setOpaque(false);
+                
+                // Add seats in 2nd and 3rd columns only up to row 6
+                if (r < 6) {
+                    seatsRow.add(createSeatButton(seatNum + 1, reserved.contains(seatNum + 1)));
+                    seatsRow.add(Box.createHorizontalStrut(6));
+                    seatsRow.add(createSeatButton(seatNum + 2, reserved.contains(seatNum + 2)));
+                } else if (r == 6) {
+                    // Row 7: No seats in 2nd and 3rd columns
+                    seatsRow.add(Box.createHorizontalStrut(108)); // Space for two seats
+                } else {
+                    // From row 8 onwards: Same as 1st column
+                    seatsRow.add(createSeatButton(seatNum + 1, reserved.contains(seatNum + 1)));
+                    seatsRow.add(Box.createHorizontalStrut(6));
+                    seatsRow.add(createSeatButton(seatNum + 2, reserved.contains(seatNum + 2)));
+                }
+                
+                doubleSeatsPanel.add(seatsRow);
+                rowPanel.add(doubleSeatsPanel);
+                grid.add(rowPanel);
+                grid.add(Box.createVerticalStrut(8));
+                seatNum += 3;
             }
-            // Koridor boşluğu
-            rowPanel.add(Box.createHorizontalStrut(24));
-            // Sağ koltuklar
-            for (int i = 0; i < right && seatNum <= seatCount; i++, seatNum++) {
-                rowPanel.add(createSeatButton(seatNum, reserved.contains(seatNum)));
-                rowPanel.add(Box.createHorizontalStrut(6));
+        } else {
+            // Original flight arrangement code
+            for (int r = 0; r < rows; r++) {
+                JPanel rowPanel = new JPanel();
+                rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.X_AXIS));
+                rowPanel.setOpaque(false);
+
+                // Calculate middle rows for empty space
+                int middleStart = rows / 2 - 1;
+                int middleEnd = rows / 2;
+
+                if (r == middleStart || r == middleEnd) {
+                    // Create exit label panel
+                    JPanel exitPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+                    exitPanel.setOpaque(false);
+                    
+                    // Left side EXIT
+                    JLabel leftExit = new JLabel("EXIT");
+                    leftExit.setFont(new Font("Arial", Font.BOLD, 16));
+                    leftExit.setForeground(Color.RED);
+                    exitPanel.add(leftExit);
+                    
+                    // Corridor space
+                    exitPanel.add(Box.createHorizontalStrut(24));
+                    
+                    // Right side EXIT
+                    JLabel rightExit = new JLabel("EXIT");
+                    rightExit.setFont(new Font("Arial", Font.BOLD, 16));
+                    rightExit.setForeground(Color.RED);
+                    exitPanel.add(rightExit);
+                    
+                    rowPanel.add(exitPanel);
+                } else {
+                    // Left side seats (3 columns)
+                    for (int i = 0; i < 3 && seatNum <= seatCount; i++) {
+                        rowPanel.add(createSeatButton(seatNum, reserved.contains(seatNum)));
+                        rowPanel.add(Box.createHorizontalStrut(6));
+                        seatNum++;
+                    }
+
+                    // Corridor space
+                    rowPanel.add(Box.createHorizontalStrut(24));
+
+                    // Right side seats (3 columns)
+                    for (int i = 0; i < 3 && seatNum <= seatCount; i++) {
+                        rowPanel.add(createSeatButton(seatNum, reserved.contains(seatNum)));
+                        rowPanel.add(Box.createHorizontalStrut(6));
+                        seatNum++;
+                    }
+                }
+                grid.add(rowPanel);
+                grid.add(Box.createVerticalStrut(8));
             }
-            grid.add(rowPanel);
-            grid.add(Box.createVerticalStrut(8));
         }
         return grid;
     }
@@ -144,7 +244,7 @@ public class SeatSelectionPanel extends JPanel {
                     return;
                 }
                 // Voyage nesnesini al
-                Voyage voyage = Voyage.getVoyageHashMap().get(voyageId);
+                voyage = Voyage.getVoyageHashMap().get(voyageId);
                 if (voyage == null) {
                     JOptionPane.showMessageDialog(this, "Sefer bulunamadı!", "Hata", JOptionPane.ERROR_MESSAGE);
                     return;
@@ -209,13 +309,83 @@ public class SeatSelectionPanel extends JPanel {
 
     private int getSeatsPerRow() {
         if (seatArrangement.equals("2+1")) {
-            return 3;
+            return 3; // 1 single + 2 double seats
         } else if (seatArrangement.equals("2+2")) {
             return 4;
-        } else if (seatArrangement.equals("3+2")) {
-            return 5;
+        } else if (seatArrangement.equals("3+3")) {
+            return 6;
         } else {
             return 3; // Default to 2+1 if unknown
+        }
+    }
+
+    private Seat getSeatAt(int row, int col) {
+        int seatNumber = calculateSeatNumber(row, col);
+        return seats.get(seatNumber);
+    }
+
+    private int calculateSeatNumber(int row, int col) {
+        int seatsPerRow = getSeatsPerRow();
+        return (row - 1) * seatsPerRow + col;
+    }
+
+    private void drawSeats(Graphics2D g2d) {
+        int seatWidth = 30;
+        int seatHeight = 30;
+        int spacing = 10;
+        int startX = (getWidth() - (seatWidth * 6 + spacing * 5)) / 2;
+        int startY = 50;
+        
+        // Draw plane exit doors for flight
+        if (voyage != null && voyage.getType().equals("Flight")) {
+            // Front exit
+            g2d.setColor(Color.RED);
+            g2d.drawString("EXIT", startX - 40, startY + 15);
+            g2d.drawRect(startX - 35, startY, 20, 40);
+            
+            // Rear exit
+            g2d.drawString("EXIT", startX - 40, startY + 200);
+            g2d.drawRect(startX - 35, startY + 200, 20, 40);
+            
+            // Middle exits
+            g2d.drawString("EXIT", startX + 200, startY + 100);
+            g2d.drawRect(startX + 200, startY + 100, 20, 40);
+            g2d.drawString("EXIT", startX + 200, startY + 150);
+            g2d.drawRect(startX + 200, startY + 150, 20, 40);
+        }
+
+        // Draw seats
+        for (int row = 0; row < 30; row++) {
+            for (int col = 0; col < 6; col++) {
+                int x = startX + col * (seatWidth + spacing);
+                int y = startY + row * (seatHeight + spacing);
+                
+                // Skip seats for aisle
+                if (col == 2 || col == 3) {
+                    g2d.setColor(Color.LIGHT_GRAY);
+                    g2d.fillRect(x, y, seatWidth, seatHeight);
+                    g2d.setColor(Color.BLACK);
+                    g2d.drawRect(x, y, seatWidth, seatHeight);
+                    continue;
+                }
+                
+                // Draw seat
+                Seat seat = getSeatAt(row + 1, col + 1);
+                if (seat != null) {
+                    if (seat.getStatus().equals("RESERVED")) {
+                        g2d.setColor(Color.RED);
+                    } else {
+                        g2d.setColor(Color.GREEN);
+                    }
+                    g2d.fillRect(x, y, seatWidth, seatHeight);
+                    g2d.setColor(Color.BLACK);
+                    g2d.drawRect(x, y, seatWidth, seatHeight);
+                    
+                    // Draw seat number
+                    g2d.setColor(Color.BLACK);
+                    g2d.drawString(String.valueOf(seat.getNumber()), x + 10, y + 20);
+                }
+            }
         }
     }
 } 

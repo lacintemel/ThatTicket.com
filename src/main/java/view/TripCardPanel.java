@@ -1,16 +1,92 @@
 package view;
 import javax.swing.*;
+import javax.swing.border.LineBorder;
+import javax.swing.border.CompoundBorder;
 import java.awt.*;
 import models.Customer;
 import commands.DeleteVoyageCommand;
 import commands.CommandCaller;
 import services.Admin;
 import models.Voyage;
+import java.text.SimpleDateFormat;
 
     // TripCardPanel: Modern card for a trip
     public class TripCardPanel extends JPanel {
         private final Customer customer;
         private final Voyage trip;
+
+        // Custom EmojiLabel class for better emoji rendering
+        private class EmojiLabel extends JLabel {
+            private static final String[] EMOJI_FONTS = {
+                "Segoe UI Emoji",
+                "Apple Color Emoji",
+                "Noto Color Emoji",
+                "Android Emoji",
+                "EmojiOne Color",
+                "Twemoji Mozilla"
+            };
+
+            public EmojiLabel(String emoji) {
+                super(emoji);
+                setFont(findEmojiFont());
+                setOpaque(true);
+                setBackground(new Color(255, 255, 255));
+                setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),
+                    BorderFactory.createEmptyBorder(4, 6, 4, 6)
+                ));
+            }
+
+            private Font findEmojiFont() {
+                for (String fontName : EMOJI_FONTS) {
+                    try {
+                        Font font = new Font(fontName, Font.PLAIN, 14);
+                        if (font.canDisplay('\uD83D')) { // Test if font can display emoji
+                            return font;
+                        }
+                    } catch (Exception e) {
+                        // Font not available, try next one
+                    }
+                }
+                // Fallback to system default
+                return new Font("Segoe UI Emoji", Font.PLAIN, 14);
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+                
+                // Draw background with gradient
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(255, 255, 255),
+                    0, getHeight(), new Color(245, 245, 245)
+                );
+                g2.setPaint(gradient);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                
+                // Draw border
+                if (getBorder() instanceof CompoundBorder) {
+                    CompoundBorder compoundBorder = (CompoundBorder) getBorder();
+                    if (compoundBorder.getOutsideBorder() instanceof LineBorder) {
+                        LineBorder lineBorder = (LineBorder) compoundBorder.getOutsideBorder();
+                        g2.setColor(lineBorder.getLineColor());
+                        g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 15, 15);
+                    }
+                }
+                
+                // Draw emoji with shadow
+                g2.setColor(new Color(0, 0, 0, 20));
+                g2.drawString(getText(), 2, getHeight() - 8);
+                g2.setColor(Color.BLACK);
+                g2.drawString(getText(), 0, getHeight() - 10);
+                
+                g2.dispose();
+            }
+        }
+
         public TripCardPanel(Voyage trip, Customer customer) {
             this.customer = customer;
             this.trip = trip;
@@ -18,273 +94,273 @@ import models.Voyage;
             setLayout(new BorderLayout());
             setBackground(new Color(0,0,0,0));
 
-            // Kart yüksekliğini sabit tut
-            setPreferredSize(new Dimension(600, 180)); // Increased height for better spacing
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
-            setMinimumSize(new Dimension(300, 180));
+            // Card dimensions
+            setPreferredSize(new Dimension(600, 200));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
+            setMinimumSize(new Dimension(300, 200));
 
-            JPanel card = new JPanel(new BorderLayout());
+            // Main card panel with modern design
+            JPanel card = new JPanel(new BorderLayout(15, 15));
             card.setBackground(Color.WHITE);
             card.setOpaque(true);
             card.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(16, new Color(230, 230, 230)),
-                BorderFactory.createEmptyBorder(20, 30, 20, 30)
+                new RoundedBorder(20, new Color(230, 230, 230)),
+                BorderFactory.createEmptyBorder(20, 25, 20, 25)
             ));
-            // Responsive: min width, no max width, sabit yükseklik
-            card.setPreferredSize(new Dimension(600, 160));
-            card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
-            card.setMinimumSize(new Dimension(300, 160));
 
-            // Admin kontrolleri için üst panel
-            JPanel adminPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-            adminPanel.setOpaque(false);
-            
-            // Sadece admin ise göster
+            // Top panel for toggle, time, and price
+            JPanel topPanel = new JPanel(new BorderLayout(15, 0));
+            topPanel.setOpaque(false);
+
+            // Left: Toggle button and company info
+            JPanel leftTopPanel = new JPanel();
+            leftTopPanel.setLayout(new BoxLayout(leftTopPanel, BoxLayout.Y_AXIS));
+            leftTopPanel.setOpaque(false);
+
+            // Admin controls
             if (customer.getUser_type().equals("Admin")) {
-                // Admin nesnesini oluştur
-                Admin admin = new Admin(customer.getId(), "1111", customer.getName(), customer.getEmail(), customer.getPassword());
+                JPanel adminPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+                adminPanel.setOpaque(false);
                 
-                // Silme butonu
-                JButton deleteBtn = new JButton("🗑️") {
+                JButton editButton = new JButton("✎") {
                     @Override
                     protected void paintComponent(Graphics g) {
                         Graphics2D g2 = (Graphics2D) g.create();
                         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        g2.setColor(new Color(255, 0, 0, 40));
-                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                        g2.setColor(new Color(52, 152, 219));
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
                         super.paintComponent(g2);
                         g2.dispose();
                     }
                 };
-                deleteBtn.setForeground(new Color(255, 0, 0));
-                deleteBtn.setFont(new Font("Arial", Font.PLAIN, 16));
-                deleteBtn.setBorderPainted(false);
-                deleteBtn.setFocusPainted(false);
-                deleteBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                deleteBtn.setPreferredSize(new Dimension(32, 32));
-                deleteBtn.addActionListener(e -> {
-                    int confirm = JOptionPane.showConfirmDialog(this,
+                editButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                editButton.setForeground(Color.WHITE);
+                editButton.setBorderPainted(false);
+                editButton.setFocusPainted(false);
+                editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                editButton.setPreferredSize(new Dimension(35, 35));
+                
+                JButton deleteButton = new JButton("×") {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(new Color(231, 76, 60));
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                        super.paintComponent(g2);
+                        g2.dispose();
+                    }
+                };
+                deleteButton.setFont(new Font("Segoe UI", Font.BOLD, 20));
+                deleteButton.setForeground(Color.WHITE);
+                deleteButton.setBorderPainted(false);
+                deleteButton.setFocusPainted(false);
+                deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                deleteButton.setPreferredSize(new Dimension(35, 35));
+                
+                adminPanel.add(editButton);
+                adminPanel.add(deleteButton);
+                
+                // Add action listeners for admin buttons
+                editButton.addActionListener(e -> {
+                    if (customer.getUser_type().equals("Admin")) {
+                        Admin admin = new Admin(customer.getId(), "1111", customer.getName(), customer.getEmail(), customer.getPassword());
+                        JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                        AdminVoyagePanel editPanel = new AdminVoyagePanel(admin, customer, topFrame, trip);
+                        JDialog dialog = new JDialog(topFrame, "Sefer Düzenle", true);
+                        dialog.setContentPane(editPanel);
+                        dialog.pack();
+                        dialog.setLocationRelativeTo(topFrame);
+                        dialog.setVisible(true);
+                    } else {
+                        JOptionPane.showMessageDialog(this, 
+                            "Bu işlem için admin yetkisi gerekiyor!", 
+                            "Hata", 
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+                
+                deleteButton.addActionListener(e -> {
+                    int confirm = JOptionPane.showConfirmDialog(
+                        this,
                         "Bu seferi silmek istediğinizden emin misiniz?",
                         "Sefer Silme",
-                        JOptionPane.YES_NO_OPTION);
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    
                     if (confirm == JOptionPane.YES_OPTION) {
-                        DeleteVoyageCommand deleteCmd = new DeleteVoyageCommand(trip, admin);
-                        CommandCaller caller = new CommandCaller();
-                        caller.executeCommand(deleteCmd);
-                        // Veritabanından da sil
-                        services.DatabaseService.deleteVoyageFromDB(trip.getVoyageId());
-                        // Kartı kaldır
-                        Container parent = getParent();
-                        if (parent != null) {
-                            parent.remove(this);
-                            parent.revalidate();
-                            parent.repaint();
+                        if (customer.getUser_type().equals("Admin")) {
+                            Admin admin = new Admin();
+                            DeleteVoyageCommand deleteCmd = new DeleteVoyageCommand(trip, admin);
+                            CommandCaller commandCaller = new CommandCaller();
+                            commandCaller.executeCommand(deleteCmd);
+                            
+                            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                            if (topFrame != null) {
+                                topFrame.dispose();
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(this, 
+                                "Bu işlem için admin yetkisi gerekiyor!", 
+                                "Hata", 
+                                JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 });
-                adminPanel.add(deleteBtn);
-
-                // Güncelleme butonu
-                JButton updateBtn = new JButton("✏️") {
-                    @Override
-                    protected void paintComponent(Graphics g) {
-                        Graphics2D g2 = (Graphics2D) g.create();
-                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        g2.setColor(new Color(0, 120, 255, 40));
-                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-                        super.paintComponent(g2);
-                        g2.dispose();
-                    }
-                };
-                updateBtn.setForeground(new Color(0, 120, 255));
-                updateBtn.setFont(new Font("Arial", Font.PLAIN, 16));
-                updateBtn.setBorderPainted(false);
-                updateBtn.setFocusPainted(false);
-                updateBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                updateBtn.setPreferredSize(new Dimension(32, 32));
-                updateBtn.addActionListener(e -> {
-                    // Güncelleme dialogunu göster
-                    JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                    AdminVoyagePanel updatePanel = new AdminVoyagePanel(admin, customer, topFrame, trip);
-                    JDialog dialog = new JDialog(topFrame, "Sefer Güncelle", true);
-                    dialog.setContentPane(updatePanel);
-                    dialog.pack();
-                    dialog.setLocationRelativeTo(topFrame);
-                    dialog.setVisible(true);
-                });
-                adminPanel.add(updateBtn);
+                
+                leftTopPanel.add(adminPanel);
             }
-            card.add(adminPanel, BorderLayout.NORTH);
 
-            // Sol içerik (firma adı, ikonlar, saatler, şehirler)
-            JPanel leftPanel = new JPanel();
-            leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-            leftPanel.setOpaque(false);
-            // Firma adı
-            JLabel firmLabel = new JLabel("<html><b>" + trip.getFirm() + "</b></html>");
-            firmLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-            leftPanel.add(firmLabel);
-            // İkonlar
-            JPanel iconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
-            iconPanel.setOpaque(false);
-            
-            // Create a custom font for icons
-            Font iconFont = new Font("Segoe UI", Font.PLAIN, 16);
-            
-            JLabel tempIcon = new JLabel("❄");
-            tempIcon.setFont(iconFont);
-            tempIcon.setToolTipText("Air Conditioning");
-            iconPanel.add(tempIcon);
-            
-            JLabel wifiIcon = new JLabel("📶");
-            wifiIcon.setFont(iconFont);
-            wifiIcon.setToolTipText("WiFi");
-            iconPanel.add(wifiIcon);
-            
-            JLabel powerIcon = new JLabel("⚡");
-            powerIcon.setFont(iconFont);
-            powerIcon.setToolTipText("Power Outlet");
-            iconPanel.add(powerIcon);
-            
-            JLabel entIcon = new JLabel("🎬");
-            entIcon.setFont(iconFont);
-            entIcon.setToolTipText("Entertainment");
-            iconPanel.add(entIcon);
-            
-            JLabel restIcon = new JLabel("🚻");
-            restIcon.setFont(iconFont);
-            restIcon.setToolTipText("Restroom");
-            iconPanel.add(restIcon);
-            
-            JLabel refreshIcon = new JLabel("☕");
-            refreshIcon.setFont(iconFont);
-            refreshIcon.setToolTipText("Refreshments");
-            iconPanel.add(refreshIcon);
-            
-            // Seat arrangement and icon
-            JPanel seatIconPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-            seatIconPanel.setOpaque(false);
-            JLabel seatIcon = new JLabel("💺");
-            seatIcon.setFont(iconFont);
-            JLabel seatLabel = new JLabel(trip.getSeatArrangement());
-            seatLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-            seatLabel.setForeground(new Color(52, 152, 219));
-            seatIconPanel.add(seatIcon);
-            seatIconPanel.add(seatLabel);
-            
-            // Wrap seatIconPanel in a container
-            JPanel seatContainerPanel = new JPanel(new BorderLayout());
-            seatContainerPanel.setBackground(new Color(52, 152, 219, 10));
-            seatContainerPanel.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(12, new Color(52, 152, 219, 30)),
-                BorderFactory.createEmptyBorder(5, 12, 5, 12)
-            ));
-            seatContainerPanel.add(seatIconPanel, BorderLayout.CENTER);
-            iconPanel.add(seatContainerPanel);
-            leftPanel.add(iconPanel);
-            
-            // Saatler ve şehirler
-            JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 24, 0));
-            timePanel.setOpaque(false);
-            
-            // Departure panel
-            JPanel depPanel = new JPanel();
-            depPanel.setOpaque(false);
-            depPanel.setLayout(new BoxLayout(depPanel, BoxLayout.Y_AXIS));
-            JLabel depLabel = new JLabel("Departure");
-            depLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            depLabel.setForeground(new Color(120,120,120));
-            depPanel.add(depLabel);
-            JLabel depTime = new JLabel("<html><b>" + (trip.getStartTime().split(" ").length > 1 ? trip.getStartTime().split(" ")[1] : trip.getStartTime()) + "</b></html>");
-            depTime.setFont(new Font("Segoe UI", Font.BOLD, 20));
-            depPanel.add(depTime);
-            JLabel depCity = new JLabel(trip.getOrigin());
-            depCity.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-            depPanel.add(depCity);
-            timePanel.add(depPanel);
+            // Company name
+            JPanel companyPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            companyPanel.setOpaque(false);
+            JLabel companyLabel = new JLabel(trip.getFirm());
+            companyLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            companyLabel.setForeground(new Color(60, 60, 60));
+            companyPanel.add(companyLabel);
+            leftTopPanel.add(companyPanel);
 
-            // Transport icon between cities
-            JLabel transportIcon = new JLabel(trip.getType().equalsIgnoreCase("Bus") ? "🚌" : "✈");
-            transportIcon.setFont(iconFont);
-            timePanel.add(transportIcon);
+            // Seat arrangement
+            JPanel seatArrangementPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            seatArrangementPanel.setOpaque(false);
+            JLabel seatArrangementLabel = new JLabel("Koltuk Düzeni: " + trip.getSeatArrangement());
+            seatArrangementLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            seatArrangementLabel.setForeground(new Color(80, 80, 80));
+            seatArrangementPanel.add(seatArrangementLabel);
+            leftTopPanel.add(seatArrangementPanel);
 
-            // Arrival panel
-            JPanel arrPanel = new JPanel();
-            arrPanel.setOpaque(false);
-            arrPanel.setLayout(new BoxLayout(arrPanel, BoxLayout.Y_AXIS));
-            JLabel arrLabel = new JLabel("Arrival");
-            arrLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            arrLabel.setForeground(new Color(120,120,120));
-            arrPanel.add(arrLabel);
-            JLabel arrTime = new JLabel("<html><b>" + (trip.getArrivalTime().split(" ").length > 1 ? trip.getArrivalTime().split(" ")[1] : trip.getArrivalTime()) + "</b></html>");
-            arrTime.setFont(new Font("Segoe UI", Font.BOLD, 20));
-            arrPanel.add(arrTime);
-            JLabel arrCity = new JLabel(trip.getDestination());
-            arrCity.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-            arrPanel.add(arrCity);
-            timePanel.add(arrPanel);
-            leftPanel.add(timePanel);
-            card.add(leftPanel, BorderLayout.CENTER);
+            topPanel.add(leftTopPanel, BorderLayout.WEST);
 
-            // Sağ panel: üstte fiyat, altta buton
-            JPanel rightPanel = new JPanel(new BorderLayout());
-            rightPanel.setOpaque(false);
-            // Fiyat sağ üstte
-            JPanel pricePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-            pricePanel.setOpaque(false);
-            JLabel priceIcon = new JLabel("₺");
-            priceIcon.setFont(iconFont);
-            JLabel priceLabel = new JLabel(" " + (int)trip.getPrice());
+            // Center: Time information
+            JPanel centerTopPanel = new JPanel();
+            centerTopPanel.setLayout(new BoxLayout(centerTopPanel, BoxLayout.Y_AXIS));
+            centerTopPanel.setOpaque(false);
+
+            // Departure time
+            JLabel timeLabel = new JLabel(trip.getStartTime().split(" ")[1]);
+            timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+            timeLabel.setForeground(new Color(52, 152, 219));
+            timeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            centerTopPanel.add(timeLabel);
+
+            // Estimated duration
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+                java.util.Date startDate = sdf.parse(trip.getStartTime().split(" ")[1]);
+                java.util.Date arrivalDate = sdf.parse(trip.getArrivalTime().split(" ")[1]);
+                long diffInMillis = arrivalDate.getTime() - startDate.getTime();
+                long diffInHours = diffInMillis / (60 * 60 * 1000);
+                long diffInMinutes = (diffInMillis / (60 * 1000)) % 60;
+                
+                JPanel durationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+                durationPanel.setOpaque(false);
+                JLabel durationLabel = new JLabel("<html><i>Tahmini Süre: " + diffInHours + "s " + diffInMinutes + "dk</i></html>");
+                durationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                durationLabel.setForeground(new Color(120,120,120));
+                durationPanel.add(durationLabel);
+                centerTopPanel.add(durationPanel);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            topPanel.add(centerTopPanel, BorderLayout.CENTER);
+
+            // Right: Price
+            JLabel priceLabel = new JLabel(String.format("%.2f ₺", trip.getPrice()));
             priceLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
             priceLabel.setForeground(new Color(52, 152, 219));
-            pricePanel.add(priceIcon);
-            pricePanel.add(priceLabel);
-            JLabel oldPriceLabel = new JLabel("₺" + (int)(trip.getPrice() * 1.1));
-            oldPriceLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-            oldPriceLabel.setForeground(new Color(180,180,180));
-            oldPriceLabel.setText("<html><strike>" + oldPriceLabel.getText() + "</strike></html>");
-            pricePanel.add(Box.createHorizontalStrut(8));
-            pricePanel.add(oldPriceLabel);
-            rightPanel.add(pricePanel, BorderLayout.NORTH);
-            // Buton sağ altta
-            JButton buyButton = new JButton("Buy") {
+            priceLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+            topPanel.add(priceLabel, BorderLayout.EAST);
+
+            card.add(topPanel, BorderLayout.NORTH);
+
+            // Main content panel
+            JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
+            contentPanel.setOpaque(false);
+            card.add(contentPanel, BorderLayout.CENTER);
+
+            // Bottom panel for route, features and buy button
+            JPanel bottomPanel = new JPanel(new GridBagLayout());
+            bottomPanel.setOpaque(false);
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 15, 0, 15);
+            
+            // Left: Bus features
+            JPanel featuresPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            featuresPanel.setOpaque(false);
+            
+            // Create emoji labels with custom rendering
+            EmojiLabel busLabel = new EmojiLabel("🚌");
+            EmojiLabel wifiLabel = new EmojiLabel("📶");
+            EmojiLabel toiletLabel = new EmojiLabel("🚽");
+            EmojiLabel foodLabel = new EmojiLabel("🍽️");
+            
+            // Set specific font for bus emoji to ensure modern version
+            busLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+            
+            featuresPanel.add(busLabel);
+            featuresPanel.add(wifiLabel);
+            featuresPanel.add(toiletLabel);
+            featuresPanel.add(foodLabel);
+            
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.insets = new Insets(0, 0, 0, 15); // Align with admin buttons
+            bottomPanel.add(featuresPanel, gbc);
+
+            // Center: Route (aligned with departure time)
+            JLabel routeLabel = new JLabel(trip.getOrigin() + " → " + trip.getDestination());
+            routeLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            routeLabel.setForeground(new Color(60, 60, 60));
+            gbc.gridx = 1;
+            gbc.gridy = 0;
+            gbc.anchor = GridBagConstraints.CENTER;
+            gbc.weightx = 1.0;
+            gbc.insets = new Insets(0, 0, 0, 15);
+            bottomPanel.add(routeLabel, gbc);
+
+            // Right: Buy button
+            JButton buyButton = new JButton("Satın Al") {
                 @Override
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     g2.setColor(new Color(52, 152, 219));
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                     super.paintComponent(g2);
                     g2.dispose();
                 }
             };
-            buyButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            buyButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
             buyButton.setForeground(Color.WHITE);
             buyButton.setBorderPainted(false);
             buyButton.setFocusPainted(false);
             buyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            buyButton.setPreferredSize(new Dimension(80, 25));
             buyButton.addActionListener(e -> {
                 int voyageId = trip.getVoyageId();
                 int seatCount = trip.getSeatCount();
                 String seatArrangement = trip.getSeatArrangement();
                 SeatSelectionPanel seatPanel = new SeatSelectionPanel(voyageId, seatCount, seatArrangement, customer);
                 JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                JDialog dialog = new JDialog(topFrame, "Seat Selection", true);
+                JDialog dialog = new JDialog(topFrame, "Koltuk Seçimi", true);
                 dialog.setContentPane(seatPanel);
                 dialog.pack();
                 dialog.setLocationRelativeTo(topFrame);
                 dialog.setVisible(true);
             });
-            JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-            btnPanel.setOpaque(false);
-            btnPanel.add(buyButton);
-            rightPanel.add(btnPanel, BorderLayout.SOUTH);
-            card.add(rightPanel, BorderLayout.EAST);
+            gbc.gridx = 2;
+            gbc.gridy = 0;
+            gbc.anchor = GridBagConstraints.EAST;
+            gbc.weightx = 0.0;
+            gbc.insets = new Insets(0, 15, 0, 15);
+            bottomPanel.add(buyButton, gbc);
 
-            setLayout(new BorderLayout());
-            add(Box.createVerticalStrut(6), BorderLayout.NORTH); // Kartlar arası padding
+            card.add(bottomPanel, BorderLayout.SOUTH);
+
             add(card, BorderLayout.CENTER);
-            add(Box.createVerticalStrut(6), BorderLayout.SOUTH);
         }
     }
         // Tam yuvarlak köşe için özel border

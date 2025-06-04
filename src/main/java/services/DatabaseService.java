@@ -51,23 +51,11 @@ public class DatabaseService {
                 )
             """);
 
-            // Gelecekte eklenecek modeller için tablolar
-            // Örnek: Transport tablosu
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS transports (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    capacity INTEGER,
-                    status TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """);
-
-            // Örnek: Voyages tablosu
+            // Voyages tablosu
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS voyages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL,
                     firm TEXT,
                     origin TEXT NOT NULL,
                     destination TEXT NOT NULL,
@@ -76,13 +64,11 @@ public class DatabaseService {
                     price DECIMAL(10,2),
                     seat_arrangement TEXT,
                     seat_count INTEGER,
-                    type TEXT,
-                    status TEXT,
-                    FOREIGN KEY (transport_id) REFERENCES transports(id)
+                    status TEXT DEFAULT 'ACTIVE'
                 )
             """);
 
-            // Örnek: Reservations tablosu
+            // Reservations tablosu
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS reservations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,9 +128,9 @@ public class DatabaseService {
                 int voyageId = rs.getInt("id");
                 String type = rs.getString("type");
                 String firm = rs.getString("firm");
-                String origin = rs.getString("from_location");
-                String destination = rs.getString("to_location");
-                String startTime = rs.getString("departure_time");
+                String origin = rs.getString("origin");
+                String destination = rs.getString("destination");
+                String startTime = rs.getString("start_time");
                 String arrivalTime = rs.getString("arrival_time");
                 int seatCount = rs.getInt("seat_count");
                 double price = rs.getDouble("price");
@@ -280,27 +266,34 @@ public class DatabaseService {
     }
 
     // Voyage ekleme fonksiyonu
-    public static boolean addVoyage(String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement) {
+    public static int addVoyage(String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement) {
         System.out.println("DatabaseService.addVoyage çağrıldı!");
         System.out.println("Seat Arrangement: " + seatArrangement);
-        String sql = "INSERT INTO voyages (firm, from_location, to_location, departure_time, arrival_time, price, seat_arrangement, seat_count, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, firm);
-            pstmt.setString(2, origin);
-            pstmt.setString(3, destination);
-            pstmt.setString(4, startTime);
-            pstmt.setString(5, arrivalTime);
-            pstmt.setDouble(6, price);
-            pstmt.setString(7, seatArrangement);
-            pstmt.setInt(8, seatCount);
-            pstmt.setString(9, type);
+        String sql = "INSERT INTO voyages (type, firm, origin, destination, start_time, arrival_time, price, seat_arrangement, seat_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, type);
+            pstmt.setString(2, firm);
+            pstmt.setString(3, origin);
+            pstmt.setString(4, destination);
+            pstmt.setString(5, startTime);
+            pstmt.setString(6, arrivalTime);
+            pstmt.setDouble(7, price);
+            pstmt.setString(8, seatArrangement);
+            pstmt.setInt(9, seatCount);
             pstmt.executeUpdate();
-            System.out.println("DatabaseService.addVoyage başarıyla bitti!");
-            return true;
+            
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int id = generatedKeys.getInt(1);
+                    System.out.println("DatabaseService.addVoyage başarıyla bitti! Generated ID: " + id);
+                    return id;
+                }
+            }
+            return -1;
         } catch (SQLException e) {
             e.printStackTrace();
             System.out.println("SQL Hatası: " + e.getMessage());
-            return false;
+            return -1;
         }
     }
 
@@ -313,9 +306,9 @@ public class DatabaseService {
                 BusTrip trip = new BusTrip(
                     rs.getInt("id"),
                     rs.getString("firm"),
-                    rs.getString("from_location"),
-                    rs.getString("to_location"),
-                    rs.getString("departure_time"),
+                    rs.getString("origin"),
+                    rs.getString("destination"),
+                    rs.getString("start_time"),
                     rs.getString("arrival_time"),
                     rs.getInt("seat_count"),
                     rs.getDouble("price"),
@@ -382,9 +375,9 @@ public class DatabaseService {
                 FlightTrip trip = new FlightTrip(
                     rs.getInt("id"),
                     rs.getString("firm"),
-                    rs.getString("from_location"),
-                    rs.getString("to_location"),
-                    rs.getString("departure_time"),
+                    rs.getString("origin"),
+                    rs.getString("destination"),
+                    rs.getString("start_time"),
                     rs.getString("arrival_time"),
                     rs.getInt("seat_count"),
                     rs.getDouble("price"),
@@ -401,7 +394,7 @@ public class DatabaseService {
     public static void addVoyageToDB(Voyage voyage) {
         Connection conn = connection;
         try {
-            String sql = "INSERT INTO voyages (type, firm, from_location, to_location, departure_time, arrival_time, seat_count, price, seat_arrangement) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO voyages (type, firm, origin, destination, start_time, arrival_time, seat_count, price, seat_arrangement) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, voyage.getType());
                 pstmt.setString(2, voyage.getFirm());
@@ -422,7 +415,7 @@ public class DatabaseService {
     public static void updateVoyageInDB(Voyage voyage) {
         Connection conn = connection;
         try {
-            String sql = "UPDATE voyages SET type = ?, firm = ?, from_location = ?, to_location = ?, departure_time = ?, arrival_time = ?, seat_count = ?, price = ?, seat_arrangement = ? WHERE id = ?";
+            String sql = "UPDATE voyages SET type = ?, firm = ?, origin = ?, destination = ?, start_time = ?, arrival_time = ?, seat_count = ?, price = ?, seat_arrangement = ? WHERE id = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, voyage.getType());
                 pstmt.setString(2, voyage.getFirm());
