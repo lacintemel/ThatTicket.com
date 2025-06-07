@@ -19,21 +19,27 @@ public class ReservationCommand implements Command{
     private Voyage voyage;
     private final int seatNumber;
     private ArrayList<Seat> customerSeats;
+    private String gender;
     
-    public ReservationCommand(Customer customer, Voyage voyage, int seatNumber) {
+    public ReservationCommand(Customer customer, Voyage voyage, int seatNumber, String gender) {
         if (customer == null) {
             throw new IllegalArgumentException("Customer cannot be null");
         }
         this.customer = customer;
         this.voyage = voyage;
         this.seatNumber = seatNumber;
+        this.gender = gender;
         this.customerSeats = customer.getCustomersVoyageHashMap().get(voyage);
     }
 
     @Override
     public void execute() {
         Seat seat = voyage.getSeats().get(seatNumber - 1);
+        if (gender != null) {
+            seat.sellSeat(customer, gender);
+        } else {
         seat.sellSeat(customer);
+        }
         
         if (customer.getCustomersVoyageHashMap().containsKey(voyage)) {
             customerSeats.add(seat);

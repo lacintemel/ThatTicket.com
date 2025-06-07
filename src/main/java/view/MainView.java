@@ -5,8 +5,6 @@ import java.awt.*;
 import java.awt.Cursor;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
 import models.Customer;
 import models.Voyage;
 import services.DatabaseService;
@@ -19,6 +17,7 @@ public class MainView extends JPanel {
     private JPanel mainPanel;
     private JPanel tripsPanel;
     private JPanel reservationsPanel;
+    private JPanel reservationsCardListPanel;
     private Customer customer;
     private JLabel dynamicTitle;
     private String currentTab = "TRIPS";
@@ -41,18 +40,43 @@ public class MainView extends JPanel {
             allTrips = new ArrayList<>(DatabaseService.getAllFlightVoyages());
         }
 
+        Color mainBg = new Color(245,247,250);
         // Üst panel: sol (sign out), orta (başlık), sağ (toggle)
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        JPanel headerPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                g.setColor(mainBg);
+                g.fillRect(0, 0, getWidth(), getHeight());
+                super.paintComponent(g);
+            }
+        };
         headerPanel.setOpaque(false);
+        headerPanel.setBackground(mainBg);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(16, 24, 16, 24));
         
         // Sign out butonu
-        JButton signOutBtn = new JButton("Sign Out");
+        JButton signOutBtn = new JButton("Sign Out") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(231, 76, 60).darker(),
+                    getWidth(), getHeight(), new Color(231, 76, 60)
+                );
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
         signOutBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         signOutBtn.setForeground(Color.WHITE);
-        signOutBtn.setBackground(new Color(231, 76, 60));
         signOutBtn.setBorderPainted(false);
         signOutBtn.setFocusPainted(false);
         signOutBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        signOutBtn.setPreferredSize(new Dimension(120, 38));
+        signOutBtn.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         signOutBtn.addActionListener(e -> {
             if (mainFrame != null) {
                 mainFrame.getContentPane().removeAll();
@@ -69,17 +93,45 @@ public class MainView extends JPanel {
         headerPanel.add(dynamicTitle, BorderLayout.CENTER);
 
         // Transport mode toggle
-        JToggleButton toggleButton = new JToggleButton(isBusMode ? "Switch to Airplane" : "Switch to Bus");
+        JToggleButton toggleButton = new JToggleButton(isBusMode ? "Switch to Airplane" : "Switch to Bus") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(
+                    0, 0, isBusMode ? new Color(52, 152, 219).darker() : new Color(231, 76, 60).darker(),
+                    getWidth(), getHeight(), !isBusMode ? new Color(52, 152, 219) : new Color(231, 76, 60)
+                );
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
         toggleButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         toggleButton.setForeground(Color.WHITE);
-        toggleButton.setBackground(isBusMode ? new Color(231, 76, 60) : new Color(52, 152, 219));
         toggleButton.setBorderPainted(false);
         toggleButton.setFocusPainted(false);
         toggleButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        toggleButton.setPreferredSize(new Dimension(150, 38));
+        toggleButton.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         toggleButton.addActionListener(e -> {
             if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
                 com.mycompany.aoopproject.AOOPProject frame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
-                frame.showMainView(new MainView(customer, !isBusMode, frame));
+                LoadingDialog loading = new LoadingDialog(frame, "Yükleniyor, lütfen bekleyin...");
+                SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected Void doInBackground() {
+                        frame.showMainView(new MainView(customer, !isBusMode, frame));
+                        return null;
+                    }
+                    @Override
+                    protected void done() {
+                        loading.dispose();
+                    }
+                };
+                worker.execute();
+                loading.setVisible(true);
             }
         });
         headerPanel.add(toggleButton, BorderLayout.EAST);
@@ -95,8 +147,24 @@ public class MainView extends JPanel {
         tripsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Filter panel (top)
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        filterPanel.setBackground(Color.WHITE);
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Drop shadow
+                g2.setColor(new Color(0,0,0,18));
+                g2.fillRoundRect(4, 4, getWidth()-8, getHeight()-8, 18, 18);
+                // Panel bg (match header gray)
+                g2.setColor(mainBg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 18, 18);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        filterPanel.setOpaque(false);
+        filterPanel.setBackground(mainBg);
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
 
         // City selection
         String[] turkishCities = {
@@ -133,9 +201,31 @@ public class MainView extends JPanel {
         // Card list panel for trips
         cardListPanel = new JPanel();
         cardListPanel.setLayout(new BoxLayout(cardListPanel, BoxLayout.Y_AXIS));
-        cardListPanel.setBackground(Color.WHITE);
+        cardListPanel.setBackground(new Color(250, 252, 255));
         JScrollPane scrollPane = new JScrollPane(cardListPanel);
-        tripsPanel.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        scrollPane.getViewport().setBackground(new Color(250, 252, 255));
+        tripsPanel.setOpaque(false);
+        tripsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        JPanel tripsPanelBg = new JPanel(new BorderLayout(10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0,0,0,15));
+                g2.fillRoundRect(8, 8, getWidth()-16, getHeight()-16, 24, 24);
+                g2.setColor(new Color(245,247,250));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        tripsPanelBg.setOpaque(false);
+        tripsPanelBg.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        tripsPanelBg.add(filterPanel, BorderLayout.NORTH);
+        tripsPanelBg.add(scrollPane, BorderLayout.CENTER);
+        tripsPanel.removeAll();
+        tripsPanel.add(tripsPanelBg, BorderLayout.CENTER);
 
         // No voyages label
         noVoyagesLabel = new JLabel("", SwingConstants.CENTER);
@@ -144,43 +234,140 @@ public class MainView extends JPanel {
         noVoyagesLabel.setVisible(false);
         cardListPanel.add(noVoyagesLabel);
 
-        // Reservations panel (placeholder)
-        reservationsPanel = new JPanel(new BorderLayout());
-        JLabel reservationsLabel = new JLabel("Rezervasyonlarınız burada görünecek.", SwingConstants.CENTER);
-        reservationsLabel.setFont(new Font("Arial", Font.ITALIC, 16));
-        reservationsPanel.add(reservationsLabel, BorderLayout.CENTER);
+        // Reservations panel (scrollable list)
+        reservationsPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0,0,0,15));
+                g2.fillRoundRect(8, 8, getWidth()-16, getHeight()-16, 24, 24);
+                g2.setColor(new Color(245,247,250));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        reservationsPanel.setOpaque(false);
+        reservationsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        reservationsCardListPanel = new JPanel();
+        reservationsCardListPanel.setLayout(new BoxLayout(reservationsCardListPanel, BoxLayout.Y_AXIS));
+        reservationsCardListPanel.setBackground(Color.WHITE);
+        JScrollPane reservationsScrollPane = new JScrollPane(reservationsCardListPanel);
+        reservationsScrollPane.setBorder(null);
+        reservationsScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        reservationsPanel.add(reservationsScrollPane, BorderLayout.CENTER);
 
         // Add both panels to mainPanel
         mainPanel.add(tripsPanel, "TRIPS");
         mainPanel.add(reservationsPanel, "RESERVATIONS");
+        updateReservationsPanel(customer, reservationsPanel);
 
         // Tabbar (bottom, centered)
         JPanel tabbar = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton btnTrips = new JButton("Seyahatler");
-        JButton btnReservations = new JButton("Rezervasyonlar");
-        tabbar.add(btnTrips);
+        tabbar.setOpaque(false);
+        Color tabGray = new Color(220, 222, 228);
+        Color tabTextGray = new Color(100, 100, 100);
+        Color tabActiveBg = new Color(120, 130, 145);
+        Color tabActiveText = Color.WHITE;
+        
+        JButton btnTrips = new JButton("Seyahatler") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if ("TRIPS".equals(currentTab)) {
+                    g2.setColor(tabActiveBg);
+                    setForeground(tabActiveText);
+                } else {
+                    g2.setColor(Color.WHITE);
+                    setForeground(tabTextGray);
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                if (!"TRIPS".equals(currentTab)) {
+                    g2.setColor(tabGray);
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.drawRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                }
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+
+        btnTrips.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnTrips.setBorderPainted(false);
+        btnTrips.setFocusPainted(false);
+        btnTrips.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnTrips.setPreferredSize(new Dimension(140, 35));
+        JButton btnReservations = new JButton("Rezervasyonlar") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if ("RESERVATIONS".equals(currentTab)) {
+                    g2.setColor(tabActiveBg);
+                    setForeground(tabActiveText);
+                } else {
+                    g2.setColor(Color.WHITE);
+                    setForeground(tabTextGray);
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                if (!"RESERVATIONS".equals(currentTab)) {
+                    g2.setColor(tabGray);
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.drawRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                }
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        btnReservations.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnReservations.setBorderPainted(false);
+        btnReservations.setFocusPainted(false);
+        btnReservations.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnReservations.setPreferredSize(new Dimension(140, 35));
         
         // Admin için "Yeni Sefer Ekle" butonu
         if (customer.getUser_type().equals("Admin")) {
-            JButton addVoyageBtn = new JButton("Yeni Sefer Ekle");
-            addVoyageBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            JButton addVoyageBtn = new JButton("Yeni Sefer Ekle") {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    // Drop shadow
+                    g2.setColor(new Color(0,0,0,30));
+                     g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                    // Gradient by mode
+                    Color mainColor = isBusMode ? new Color(52, 152, 219) : new Color(220, 53, 69);
+                    GradientPaint gp = new GradientPaint(0, 0, mainColor.darker(), getWidth(), getHeight(), mainColor);
+                    g2.setPaint(gp);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 18, 18);
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
+            addVoyageBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
             addVoyageBtn.setForeground(Color.WHITE);
-            addVoyageBtn.setBackground(new Color(46, 204, 113));
             addVoyageBtn.setBorderPainted(false);
             addVoyageBtn.setFocusPainted(false);
             addVoyageBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            addVoyageBtn.setPreferredSize(new Dimension(150, 40));
+            addVoyageBtn.setPreferredSize(new Dimension(160, 32));
             addVoyageBtn.addActionListener(e -> {
                 if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
                     com.mycompany.aoopproject.AOOPProject frame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
                     Admin admin = new Admin(customer.getId(), "1111", customer.getName(), customer.getEmail(), customer.getPassword());
-                    frame.showAdminPanel(admin, true);
+                    frame.showAdminPanel(admin, isBusMode);
                 }
             });
+            tabbar.add(btnTrips);
+            tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(addVoyageBtn);
+            tabbar.add(Box.createHorizontalStrut(12));
+            tabbar.add(btnReservations);
+        } else {
+            tabbar.add(btnTrips);
+            tabbar.add(btnReservations);
         }
-        
-        tabbar.add(btnReservations);
         add(tabbar, BorderLayout.SOUTH);
 
         // Button actions to switch views
@@ -190,6 +377,20 @@ public class MainView extends JPanel {
         // Show trips by default
         switchTab("TRIPS");
         updateTripList();
+
+        // MainView arka planı için gradient
+        setOpaque(false);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        GradientPaint gp = new GradientPaint(0, 0, new Color(245,247,250), 0, getHeight(), new Color(220,230,245));
+        g2.setPaint(gp);
+        g2.fillRect(0, 0, getWidth(), getHeight());
+        g2.dispose();
+        super.paintComponent(g);
     }
 
     private void validateCities() {
@@ -243,7 +444,7 @@ public class MainView extends JPanel {
 
             if (matches) {
                 hasMatchingTrips = true;
-                cardListPanel.add(new TripCardPanel(trip, customer));
+                cardListPanel.add(new TripCardPanel(trip, customer, this, reservationsPanel));
                 cardListPanel.add(Box.createVerticalStrut(10));
             }
         }
@@ -270,9 +471,48 @@ public class MainView extends JPanel {
         } else {
             dynamicTitle.setText("Rezervasyonlar");
         }
+        // Update tabbar button colors
+        revalidate();
+        repaint();
+    }
+
+    // Rezervasyonlar panelini güncelleyen fonksiyon
+    public void updateReservationsPanel(Customer customer, JPanel reservationsPanel) {
+        System.out.println("Panel güncelleniyor...");
+        reservationsCardListPanel.removeAll();
+        java.util.List<services.DatabaseService.ReservationInfo> reservations = services.DatabaseService.getReservationsForUser(Integer.parseInt(customer.getId()));
+        System.out.println("Veritabanından rezervasyon sayısı: " + reservations.size());
+        if (reservations.isEmpty()) {
+            JLabel emptyLabel = new JLabel("Rezervasyonunuz bulunmamaktadır.", SwingConstants.CENTER);
+            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+            reservationsCardListPanel.add(emptyLabel);
+        } else {
+            for (services.DatabaseService.ReservationInfo res : reservations) {
+                Voyage voyage = Voyage.getVoyageHashMap().get(res.voyageId);
+                if (voyage != null) {
+                    System.out.println("Voyage: " + voyage.getVoyageId() + ", Seat: " + res.seatNumber);
+                    ReservationCardPanel panel = new ReservationCardPanel(voyage, customer, res.seatNumber, res.gender, this, res.reservationDate);
+                    reservationsCardListPanel.add(panel);
+                    reservationsCardListPanel.add(Box.createVerticalStrut(10));
+                }
+            }
+        }
+        reservationsCardListPanel.revalidate();
+        reservationsCardListPanel.repaint();
     }
 
     public JList<String> getBusList() {
         return busList;
+    }
+
+    public void showSeatSelectionPanel(Voyage voyage, Customer customer) {
+        mainPanel.removeAll();
+        mainPanel.add(new SeatSelectionPanel(voyage.getVoyageId(), voyage.getSeatCount(), voyage.getSeatArrangement(), customer, this, reservationsPanel), BorderLayout.CENTER);
+        mainPanel.revalidate();
+        mainPanel.repaint();
+    }
+
+    public JFrame getMainFrame() {
+        return mainFrame;
     }
 }

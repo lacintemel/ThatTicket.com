@@ -7,9 +7,7 @@ import java.awt.event.ActionListener;
 import javax.swing.border.Border;
 import models.User;
 import models.Customer;
-import services.Admin;
 import services.DatabaseService;
-import com.mycompany.aoopproject.AOOPProject;
 
 public class LoginView extends JPanel {
     private final Color mainBlue = new Color(52, 152, 219);
@@ -160,23 +158,50 @@ public class LoginView extends JPanel {
             }
 
             // Giriş başarılı
-            JOptionPane.showMessageDialog(this, "Giriş başarılı! Hoş geldiniz, " + user.getName(), "Başarılı", JOptionPane.INFORMATION_MESSAGE);
-            SwingUtilities.invokeLater(() -> {
-                Container topLevel = this.getTopLevelAncestor();
-                if (topLevel instanceof AOOPProject) {
-                    AOOPProject frame = (AOOPProject) topLevel;
-                    if (user instanceof Admin) {
-                        frame.showAdminPanel((Admin) user, rightPanel.isBusMode());
-                    } else {
-                        Customer customer = new Customer(user.getId(), user.getName(), "", user.getEmail(), user.getPassword());
-                        if (rightPanel.isBusMode() == true) {
-                            frame.showMainView(new MainView(customer,true,frame));
+            // Loading dialog başlat
+            Container topLevel = this.getTopLevelAncestor();
+            Frame parentFrame = topLevel instanceof Frame ? (Frame) topLevel : null;
+            LoadingDialog loading = new LoadingDialog(parentFrame, "Giriş yapılıyor, lütfen bekleyin...");
+
+            SwingWorker<User, Void> worker = new SwingWorker<>() {
+                @Override
+                protected User doInBackground() {
+                    User user = services.DatabaseService.getUserByEmail(email);
+                    try { Thread.sleep(500); } catch (InterruptedException ex) {}
+                    return user;
+                }
+                @Override
+                protected void done() {
+                    User user = null;
+                    try { user = get(); } catch (Exception ex) { ex.printStackTrace(); }
+                    if (user == null) {
+                        loading.dispose();
+                        JOptionPane.showMessageDialog(LoginView.this, "Kullanıcı bulunamadı!", "Hata", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (!user.getPassword().equals(password)) {
+                        loading.dispose();
+                        JOptionPane.showMessageDialog(LoginView.this, "Hatalı şifre!", "Hata", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    // Başarılıysa önce ana ekrana geçişi başlat, sonra loading'i kapat
+                    if (topLevel instanceof com.mycompany.aoopproject.AOOPProject frame) {
+                        if (user instanceof services.Admin) {
+                            frame.showAdminPanel((services.Admin) user, rightPanel.isBusMode());
                         } else {
-                            frame.showMainView(new MainView(customer,false,frame));
+                            Customer customer = new Customer(user.getId(), user.getName(), "", user.getEmail(), user.getPassword());
+                            if (rightPanel.isBusMode()) {
+                                frame.showMainView(new MainView(customer, true, frame));
+                            } else {
+                                frame.showMainView(new MainView(customer, false, frame));
+                            }
                         }
                     }
+                    loading.dispose();
                 }
-            });
+            };
+            worker.execute();
+            loading.setVisible(true);
         });
         cardPanel.add(signInBtn);
 

@@ -6,6 +6,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
+import java.util.Map;
 import models.Voyage;
 import factorys.VoyageFactory;
 
@@ -75,7 +76,7 @@ public class DatabaseService {
                     user_id INTEGER,
                     voyage_id INTEGER,
                     seat_number INTEGER,
-                    status TEXT,
+                    gender TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id),
                     FOREIGN KEY (voyage_id) REFERENCES voyages(id)
@@ -341,12 +342,13 @@ public class DatabaseService {
     }
 
     // Rezervasyon ekle
-    public static boolean addReservation(int userId, int voyageId, int seatNumber) {
-        String sql = "INSERT INTO reservations (user_id, voyage_id, seat_number, status) VALUES (?, ?, ?, 'RESERVED')";
+    public static boolean addReservation(int userId, int voyageId, int seatNumber, String gender) {
+        String sql = "INSERT INTO reservations (user_id, voyage_id, seat_number, gender) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
             pstmt.setInt(2, voyageId);
             pstmt.setInt(3, seatNumber);
+            pstmt.setString(4, gender);
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -432,5 +434,68 @@ public class DatabaseService {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public static Map<Integer, String> getReservedSeatsWithGender(int voyageId) {
+        Map<Integer, String> reserved = new HashMap<>();
+        String sql = "SELECT seat_number, gender FROM reservations WHERE voyage_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, voyageId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                reserved.put(rs.getInt("seat_number"), rs.getString("gender"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return reserved;
+    }
+
+    // Kullanıcı, sefer ve koltuk numarasına göre rezervasyon sil
+    public static boolean deleteReservation(int userId, int voyageId, int seatNumber) {
+        String sql = "DELETE FROM reservations WHERE user_id = ? AND voyage_id = ? AND seat_number = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, voyageId);
+            pstmt.setInt(3, seatNumber);
+            int affected = pstmt.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Kullanıcıya göre rezervasyonları döndüren fonksiyon
+    public static class ReservationInfo {
+        public int voyageId;
+        public int seatNumber;
+        public String gender;
+        public String reservationDate;
+        public ReservationInfo(int voyageId, int seatNumber, String gender, String reservationDate) {
+            this.voyageId = voyageId;
+            this.seatNumber = seatNumber;
+            this.gender = gender;
+            this.reservationDate = reservationDate;
+        }
+    }
+    public static java.util.List<ReservationInfo> getReservationsForUser(int userId) {
+        java.util.List<ReservationInfo> reservations = new java.util.ArrayList<>();
+        String sql = "SELECT voyage_id, seat_number, gender, created_at FROM reservations WHERE user_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                reservations.add(new ReservationInfo(
+                    rs.getInt("voyage_id"),
+                    rs.getInt("seat_number"),
+                    rs.getString("gender"),
+                    rs.getString("created_at")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return reservations;
     }
 }

@@ -14,6 +14,7 @@ public class Seat {
     private int number;
     private String status;
     private Customer takenByWho;
+    private String gender;
 
     public Seat(int id, int number) {
         this.id = id;
@@ -25,6 +26,12 @@ public class Seat {
     public void sellSeat(Customer customer){
         this.status = "Reserved";
         this.takenByWho = customer;
+    }
+    
+    public void sellSeat(Customer customer, String gender){
+        this.status = "Reserved";
+        this.takenByWho = customer;
+        this.gender = gender;
     }
     
     public void emptySeat(){
@@ -54,6 +61,10 @@ public class Seat {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getGender() {
+        return gender;
     }
     
     

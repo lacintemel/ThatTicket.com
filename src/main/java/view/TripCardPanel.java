@@ -1,366 +1,381 @@
 package view;
 import javax.swing.*;
-import javax.swing.border.LineBorder;
-import javax.swing.border.CompoundBorder;
 import java.awt.*;
 import models.Customer;
-import commands.DeleteVoyageCommand;
-import commands.CommandCaller;
-import services.Admin;
 import models.Voyage;
-import java.text.SimpleDateFormat;
+import services.DatabaseService;
+import services.Admin;
+import java.net.URL;
 
     // TripCardPanel: Modern card for a trip
     public class TripCardPanel extends JPanel {
         private final Customer customer;
         private final Voyage trip;
+        private JLabel firmLabel;
+        private JLabel routeLabel;
+        private JLabel timeLabel;
+        private JLabel priceLabel;
+        private JLabel availableSeatsLabel;
+        private JButton buyButton;
+        private JButton editButton;
+        private JButton deleteButton;
+        private int availableSeats;
+        private JPanel routePanel;
+        private JFrame mainFrame;
+        private MainView mainView;
+        private JPanel reservationsPanel;
 
         // Custom EmojiLabel class for better emoji rendering
-        private class EmojiLabel extends JLabel {
-            private static final String[] EMOJI_FONTS = {
-                "Segoe UI Emoji",
-                "Apple Color Emoji",
-                "Noto Color Emoji",
-                "Android Emoji",
-                "EmojiOne Color",
-                "Twemoji Mozilla"
-            };
+      
 
-            public EmojiLabel(String emoji) {
-                super(emoji);
-                setFont(findEmojiFont());
-                setOpaque(true);
-                setBackground(new Color(255, 255, 255));
-                setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),
-                    BorderFactory.createEmptyBorder(4, 6, 4, 6)
-                ));
-            }
-
-            private Font findEmojiFont() {
-                for (String fontName : EMOJI_FONTS) {
-                    try {
-                        Font font = new Font(fontName, Font.PLAIN, 14);
-                        if (font.canDisplay('\uD83D')) { // Test if font can display emoji
-                            return font;
-                        }
-                    } catch (Exception e) {
-                        // Font not available, try next one
-                    }
-                }
-                // Fallback to system default
-                return new Font("Segoe UI Emoji", Font.PLAIN, 14);
-            }
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-                
-                // Draw background with gradient
-                GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(255, 255, 255),
-                    0, getHeight(), new Color(245, 245, 245)
-                );
-                g2.setPaint(gradient);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                
-                // Draw border
-                if (getBorder() instanceof CompoundBorder) {
-                    CompoundBorder compoundBorder = (CompoundBorder) getBorder();
-                    if (compoundBorder.getOutsideBorder() instanceof LineBorder) {
-                        LineBorder lineBorder = (LineBorder) compoundBorder.getOutsideBorder();
-                        g2.setColor(lineBorder.getLineColor());
-                        g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 15, 15);
-                    }
-                }
-                
-                // Draw emoji with shadow
-                g2.setColor(new Color(0, 0, 0, 20));
-                g2.drawString(getText(), 2, getHeight() - 8);
-                g2.setColor(Color.BLACK);
-                g2.drawString(getText(), 0, getHeight() - 10);
-                
-                g2.dispose();
-            }
-        }
-
-        public TripCardPanel(Voyage trip, Customer customer) {
+        public TripCardPanel(Voyage trip, Customer customer, MainView mainView, JPanel reservationsPanel) {
             this.customer = customer;
             this.trip = trip;
+            this.mainView = mainView;
+            this.reservationsPanel = reservationsPanel;
+            this.mainFrame = mainView.getMainFrame();
             setOpaque(false);
             setLayout(new BorderLayout());
             setBackground(new Color(0,0,0,0));
+            setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+            setPreferredSize(new Dimension(getPreferredSize().width, 225));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 225));
+            setMinimumSize(new Dimension(0, 225));
+            setAlignmentX(Component.CENTER_ALIGNMENT);
+            setAlignmentY(Component.CENTER_ALIGNMENT);
 
-            // Card dimensions
-            setPreferredSize(new Dimension(600, 200));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
-            setMinimumSize(new Dimension(300, 200));
+            // Determine color by vehicle type
+            Color mainColor;
+            if (trip.getType().equalsIgnoreCase("Bus")) {
+                mainColor = new Color(52, 152, 219); // Mavi
+            } else {
+                mainColor = new Color(220, 53, 69); // Kırmızı
+            }
 
-            // Main card panel with modern design
-            JPanel card = new JPanel(new BorderLayout(15, 15));
-            card.setBackground(Color.WHITE);
-            card.setOpaque(true);
-            card.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(20, new Color(230, 230, 230)),
-                BorderFactory.createEmptyBorder(20, 25, 20, 25)
-            ));
-
-            // Top panel for toggle, time, and price
-            JPanel topPanel = new JPanel(new BorderLayout(15, 0));
-            topPanel.setOpaque(false);
-
-            // Left: Toggle button and company info
-            JPanel leftTopPanel = new JPanel();
-            leftTopPanel.setLayout(new BoxLayout(leftTopPanel, BoxLayout.Y_AXIS));
-            leftTopPanel.setOpaque(false);
-
-            // Admin controls
-            if (customer.getUser_type().equals("Admin")) {
-                JPanel adminPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-                adminPanel.setOpaque(false);
-                
-                JButton editButton = new JButton("✎") {
-                    @Override
-                    protected void paintComponent(Graphics g) {
-                        Graphics2D g2 = (Graphics2D) g.create();
-                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        g2.setColor(new Color(52, 152, 219));
-                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                        super.paintComponent(g2);
-                        g2.dispose();
-                    }
-                };
-                editButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-                editButton.setForeground(Color.WHITE);
-                editButton.setBorderPainted(false);
-                editButton.setFocusPainted(false);
-                editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                editButton.setPreferredSize(new Dimension(35, 35));
-                
-                JButton deleteButton = new JButton("×") {
-                    @Override
-                    protected void paintComponent(Graphics g) {
-                        Graphics2D g2 = (Graphics2D) g.create();
-                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        g2.setColor(new Color(231, 76, 60));
-                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                        super.paintComponent(g2);
-                        g2.dispose();
-                    }
-                };
-                deleteButton.setFont(new Font("Segoe UI", Font.BOLD, 20));
-                deleteButton.setForeground(Color.WHITE);
-                deleteButton.setBorderPainted(false);
-                deleteButton.setFocusPainted(false);
-                deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                deleteButton.setPreferredSize(new Dimension(35, 35));
-                
-                adminPanel.add(editButton);
-                adminPanel.add(deleteButton);
-                
-                // Add action listeners for admin buttons
-                editButton.addActionListener(e -> {
-                    if (customer.getUser_type().equals("Admin")) {
-                        Admin admin = new Admin(customer.getId(), "1111", customer.getName(), customer.getEmail(), customer.getPassword());
-                        JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                        AdminVoyagePanel editPanel = new AdminVoyagePanel(admin, customer, topFrame, trip);
-                        JDialog dialog = new JDialog(topFrame, "Sefer Düzenle", true);
-                        dialog.setContentPane(editPanel);
-                        dialog.pack();
-                        dialog.setLocationRelativeTo(topFrame);
-                        dialog.setVisible(true);
-                    } else {
-                        JOptionPane.showMessageDialog(this, 
-                            "Bu işlem için admin yetkisi gerekiyor!", 
-                            "Hata", 
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                });
-                
-                deleteButton.addActionListener(e -> {
-                    int confirm = JOptionPane.showConfirmDialog(
-                        this,
-                        "Bu seferi silmek istediğinizden emin misiniz?",
-                        "Sefer Silme",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE
+            // Card panel tanımı (eski yeriyle aynı şekilde)
+            JPanel card = new JPanel(new BorderLayout(15, 15)) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    // Drop shadow
+                    g2.setColor(new Color(0,0,0,30));
+                    g2.fillRoundRect(12, 12, getWidth()-24, getHeight()-24, 32, 32);
+                    // Card gradient
+                    GradientPaint gp = new GradientPaint(
+                        0, 0, new Color(245, 247, 250),
+                        0, getHeight(), new Color(230, 232, 235)
                     );
-                    
-                    if (confirm == JOptionPane.YES_OPTION) {
-                        if (customer.getUser_type().equals("Admin")) {
-                            Admin admin = new Admin();
-                            DeleteVoyageCommand deleteCmd = new DeleteVoyageCommand(trip, admin);
-                            CommandCaller commandCaller = new CommandCaller();
-                            commandCaller.executeCommand(deleteCmd);
-                            
-                            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                            if (topFrame != null) {
-                                topFrame.dispose();
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(this, 
-                                "Bu işlem için admin yetkisi gerekiyor!", 
-                                "Hata", 
-                                JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                });
-                
-                leftTopPanel.add(adminPanel);
+                    g2.setPaint(gp);
+                    g2.fillRoundRect(6, 6, getWidth()-12, getHeight()-12, 32, 32);
+                    g2.setColor(new Color(230,230,230));
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawRoundRect(6, 6, getWidth()-12, getHeight()-12, 32, 32);
+                    g2.dispose();
+                }
+            };
+            card.setOpaque(false);
+            card.setBorder(BorderFactory.createEmptyBorder(18, 24, 18, 24));
+
+            // --- ÜST SATIR ---
+            JPanel topRow = new JPanel(new BorderLayout());
+            topRow.setOpaque(false);
+            // Sol grup: admin ikonları, koltuk kutusu, firma adı
+            JPanel leftTop = new JPanel();
+            leftTop.setOpaque(false);
+            leftTop.setLayout(new BoxLayout(leftTop, BoxLayout.X_AXIS));
+            // Admin ikonları
+            if (customer != null && "Admin".equalsIgnoreCase(customer.getUser_type())) {
+                leftTop.add(createAdminIconsPanel());
+                leftTop.add(Box.createHorizontalStrut(4));
             }
+            // Koltuk düzeni kutusu
+            leftTop.add(createSeatPanel(mainColor));
+            leftTop.add(Box.createHorizontalStrut(4));
+            // Firma adı
+            firmLabel = createFirmLabel(mainColor);
+            leftTop.add(firmLabel);
+            topRow.add(leftTop, BorderLayout.WEST);
+            
+            timeLabel = createTimeLabel(mainColor);
+            topRow.add(timeLabel, BorderLayout.CENTER);
 
-            // Company name
-            JPanel companyPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            companyPanel.setOpaque(false);
-            JLabel companyLabel = new JLabel(trip.getFirm());
-            companyLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            companyLabel.setForeground(new Color(60, 60, 60));
-            companyPanel.add(companyLabel);
-            leftTopPanel.add(companyPanel);
+            priceLabel = createPriceLabel(mainColor);
+            topRow.add(priceLabel, BorderLayout.EAST);
 
-            // Seat arrangement
-            JPanel seatArrangementPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            seatArrangementPanel.setOpaque(false);
-            JLabel seatArrangementLabel = new JLabel("Koltuk Düzeni: " + trip.getSeatArrangement());
-            seatArrangementLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            seatArrangementLabel.setForeground(new Color(80, 80, 80));
-            seatArrangementPanel.add(seatArrangementLabel);
-            leftTopPanel.add(seatArrangementPanel);
 
-            topPanel.add(leftTopPanel, BorderLayout.WEST);
 
-            // Center: Time information
-            JPanel centerTopPanel = new JPanel();
-            centerTopPanel.setLayout(new BoxLayout(centerTopPanel, BoxLayout.Y_AXIS));
-            centerTopPanel.setOpaque(false);
+            JPanel middleRow = new JPanel(new BorderLayout());
+            middleRow.setOpaque(false);
+            // Sağda boş koltuk kutusu
+            availableSeats = trip.getSeatCount() - DatabaseService.getReservedSeats(trip.getVoyageId()).size();
+            middleRow.add(createAvailablePanel(), BorderLayout.WEST);
 
-            // Departure time
-            JLabel timeLabel = new JLabel(trip.getStartTime().split(" ")[1]);
-            timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-            timeLabel.setForeground(new Color(52, 152, 219));
-            timeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            centerTopPanel.add(timeLabel);
+            
 
-            // Estimated duration
+
+
+            // --- ALT SATIR ---
+            JPanel bottomRow = new JPanel(new BorderLayout());
+            bottomRow.setOpaque(false);
+            // Sol: ikonlar
+            bottomRow.add(createIconsPanel(), BorderLayout.WEST);
+            // Orta: rota bilgisi
+            routeLabel = createRouteLabel();
+            bottomRow.add(routeLabel, BorderLayout.CENTER);
+            // Sağ: Sadece Satın Al butonu
+            bottomRow.add(createBuyButtonPanel(mainColor), BorderLayout.EAST);
+
+            // --- ANA PANEL ---
+            JPanel mainPanel = new JPanel();
+            mainPanel.setOpaque(false);
+            mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+            mainPanel.add(topRow);
+            mainPanel.add(Box.createVerticalStrut(12));
+            mainPanel.add(middleRow);
+            mainPanel.add(Box.createVerticalStrut(12));
+            mainPanel.add(bottomRow);
+
+            card.add(mainPanel, BorderLayout.CENTER);
+            add(card, BorderLayout.CENTER);
+
+        
+        }
+
+        // --- YARDIMCI PANEL FONKSİYONLARI ---
+        private JPanel createAdminIconsPanel() {
+            JPanel adminIconsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+            adminIconsPanel.setOpaque(false);
+            editButton = new JButton();
             try {
-                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-                java.util.Date startDate = sdf.parse(trip.getStartTime().split(" ")[1]);
-                java.util.Date arrivalDate = sdf.parse(trip.getArrivalTime().split(" ")[1]);
-                long diffInMillis = arrivalDate.getTime() - startDate.getTime();
-                long diffInHours = diffInMillis / (60 * 60 * 1000);
-                long diffInMinutes = (diffInMillis / (60 * 1000)) % 60;
-                
-                JPanel durationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-                durationPanel.setOpaque(false);
-                JLabel durationLabel = new JLabel("<html><i>Tahmini Süre: " + diffInHours + "s " + diffInMinutes + "dk</i></html>");
-                durationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                durationLabel.setForeground(new Color(120,120,120));
-                durationPanel.add(durationLabel);
-                centerTopPanel.add(durationPanel);
-            } catch (Exception ex) {
-                ex.printStackTrace();
+                URL editUrl = new URL("https://img.icons8.com/ios/50/edit--v1.png");
+                editButton.setIcon(new ImageIcon(new ImageIcon(editUrl).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));
+            } catch (Exception e) {
+                editButton.setText("✏");
+                editButton.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
             }
-
-            topPanel.add(centerTopPanel, BorderLayout.CENTER);
-
-            // Right: Price
-            JLabel priceLabel = new JLabel(String.format("%.2f ₺", trip.getPrice()));
-            priceLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-            priceLabel.setForeground(new Color(52, 152, 219));
-            priceLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-            topPanel.add(priceLabel, BorderLayout.EAST);
-
-            card.add(topPanel, BorderLayout.NORTH);
-
-            // Main content panel
-            JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
-            contentPanel.setOpaque(false);
-            card.add(contentPanel, BorderLayout.CENTER);
-
-            // Bottom panel for route, features and buy button
-            JPanel bottomPanel = new JPanel(new GridBagLayout());
-            bottomPanel.setOpaque(false);
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(0, 15, 0, 15);
-            
-            // Left: Bus features
-            JPanel featuresPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-            featuresPanel.setOpaque(false);
-            
-            // Create emoji labels with custom rendering
-            EmojiLabel busLabel = new EmojiLabel("🚌");
-            EmojiLabel wifiLabel = new EmojiLabel("📶");
-            EmojiLabel toiletLabel = new EmojiLabel("🚽");
-            EmojiLabel foodLabel = new EmojiLabel("🍽️");
-            
-            // Set specific font for bus emoji to ensure modern version
-            busLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-            
-            featuresPanel.add(busLabel);
-            featuresPanel.add(wifiLabel);
-            featuresPanel.add(toiletLabel);
-            featuresPanel.add(foodLabel);
-            
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            gbc.anchor = GridBagConstraints.WEST;
-            gbc.insets = new Insets(0, 0, 0, 15); // Align with admin buttons
-            bottomPanel.add(featuresPanel, gbc);
-
-            // Center: Route (aligned with departure time)
-            JLabel routeLabel = new JLabel(trip.getOrigin() + " → " + trip.getDestination());
-            routeLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            routeLabel.setForeground(new Color(60, 60, 60));
-            gbc.gridx = 1;
-            gbc.gridy = 0;
-            gbc.anchor = GridBagConstraints.CENTER;
-            gbc.weightx = 1.0;
-            gbc.insets = new Insets(0, 0, 0, 15);
-            bottomPanel.add(routeLabel, gbc);
-
-            // Right: Buy button
+            editButton.setBorderPainted(false);
+            editButton.setContentAreaFilled(false);
+            editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            editButton.setToolTipText("Düzenle");
+            editButton.addActionListener(e -> {
+                System.out.println("Edit button clicked");
+                if (customer != null && "Admin".equalsIgnoreCase(customer.getUser_type())) {
+                    System.out.println("User is admin, proceeding with edit");
+                    JFrame frame = mainView.getMainFrame();
+                    if (frame instanceof com.mycompany.aoopproject.AOOPProject) {
+                        System.out.println("Creating EditVoyagePanel");
+                        com.mycompany.aoopproject.AOOPProject aoopFrame = (com.mycompany.aoopproject.AOOPProject) frame;
+                        EditVoyagePanel editPanel = new EditVoyagePanel(customer, trip, aoopFrame);
+                        System.out.println("Showing EditVoyagePanel");
+                        aoopFrame.showMainView(editPanel);
+                    } else {
+                        System.out.println("MainFrame is not AOOPProject");
+                    }
+                } else {
+                    System.out.println("User is not admin");
+                }
+            });
+            deleteButton = new JButton();
+            try {
+                URL deleteUrl = new URL("https://img.icons8.com/fluency-systems-regular/48/filled-trash.png");
+                deleteButton.setIcon(new ImageIcon(new ImageIcon(deleteUrl).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));
+            } catch (Exception e) {
+                deleteButton.setText("🗑");
+                deleteButton.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+            }
+            deleteButton.setBorderPainted(false);
+            deleteButton.setContentAreaFilled(false);
+            deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            deleteButton.setToolTipText("Sil");
+            deleteButton.addActionListener(e -> {
+                int result = JOptionPane.showConfirmDialog(this, "Bu seferi silmek istediğinize emin misiniz?", "Onay", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (result == JOptionPane.YES_OPTION) {
+                    DatabaseService.deleteVoyageFromDB(trip.getVoyageId());
+                    Container parent = this.getParent();
+                    if (parent != null) {
+                        parent.remove(this);
+                        parent.revalidate();
+                        parent.repaint();
+                    }
+                    Admin adminObj = Admin.getAdminByEmail(customer.getEmail());
+                    if (adminObj != null && mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
+                        ((com.mycompany.aoopproject.AOOPProject) mainFrame).showAdminPanel(adminObj, trip.getType().equalsIgnoreCase("Bus"));
+                    }
+                }
+            });
+            adminIconsPanel.add(editButton);
+            adminIconsPanel.add(deleteButton);
+            return adminIconsPanel;
+        }
+        private JPanel createSeatPanel(Color mainColor) {
+            JPanel seatPanel = new JPanel() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    int arc = 14;
+                    g2.setColor(new Color(240, 245, 255));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
+                    g2.setColor(mainColor);
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, arc, arc);
+                    g2.dispose();
+                }
+            };
+            seatPanel.setOpaque(false);
+            seatPanel.setLayout(new GridBagLayout());
+            JLabel seatLabel = new JLabel(trip.getSeatArrangement());
+            seatLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            seatLabel.setForeground(mainColor);
+            seatPanel.add(seatLabel);
+            int paddingX = 8, paddingY = 2;
+            FontMetrics fm = seatLabel.getFontMetrics(seatLabel.getFont());
+            int textW = fm.stringWidth(seatLabel.getText());
+            int textH = fm.getHeight();
+            Dimension boxDim = new Dimension(textW + paddingX * 2, textH + paddingY * 2);
+            seatPanel.setPreferredSize(boxDim);
+            seatPanel.setMinimumSize(boxDim);
+            seatPanel.setMaximumSize(boxDim);
+            seatPanel.setBorder(BorderFactory.createEmptyBorder(paddingY, paddingX, paddingY, paddingX));
+            return seatPanel;
+        }
+        private JLabel createFirmLabel(Color mainColor) {
+            JLabel label = new JLabel(trip.getFirm().toUpperCase());
+            label.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            label.setForeground(mainColor);
+            return label;
+        }
+        private JPanel createAvailablePanel() {
+            JPanel availablePanel = new JPanel() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    int arc = 14;
+                    g2.setColor(new Color(240, 245, 255));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
+                    g2.setColor(new Color(80, 80, 80));
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, arc, arc);
+                    g2.dispose();
+                }
+            };
+            availablePanel.setOpaque(false);
+            availablePanel.setLayout(new GridBagLayout());
+            int availableSeats = trip.getSeatCount() - DatabaseService.getReservedSeats(trip.getVoyageId()).size();
+            JLabel availableLabel = new JLabel(availableSeats + " Boş Koltuk");
+            availableLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            availableLabel.setForeground(new Color(80, 80, 80));
+            availablePanel.add(availableLabel);
+            FontMetrics fm2 = availableLabel.getFontMetrics(availableLabel.getFont());
+            int textHeight2 = fm2.getHeight();
+            int padding2 = 2;
+            int boxHeight2 = textHeight2 + padding2 * 2;
+            int boxWidth2 = availableLabel.getPreferredSize().width + 10;
+            availablePanel.setBorder(BorderFactory.createEmptyBorder(padding2, 5, padding2, 5));
+            availablePanel.setMaximumSize(new Dimension(boxWidth2, boxHeight2));
+            availablePanel.setPreferredSize(new Dimension(boxWidth2, boxHeight2));
+            availablePanel.setMinimumSize(new Dimension(boxWidth2, boxHeight2));
+            return availablePanel;
+        }
+        private JLabel createTimeLabel(Color mainColor) {
+            JLabel label = new JLabel(trip.getStartTime().split(" ")[1]);
+            label.setFont(new Font("Segoe UI", Font.BOLD, 32));
+            label.setForeground(mainColor);
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            return label;
+        }
+        private JLabel createPriceLabel(Color mainColor) {
+            JLabel label = new JLabel(String.format("%.2f ₺", trip.getPrice()));
+            label.setFont(new Font("Segoe UI", Font.BOLD, 28));
+            label.setForeground(mainColor);
+            label.setHorizontalAlignment(SwingConstants.RIGHT);
+            return label;
+        }
+        private JPanel createIconsPanel() {
+            JPanel iconsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            iconsPanel.setOpaque(false);
+            try {
+                int iconSize = 24;
+                java.net.URL stopwatchUrl = new java.net.URI("https://img.icons8.com/material-outlined/24/stopwatch.png").toURL();
+                java.net.URL wifiUrl = new java.net.URI("https://img.icons8.com/ios-glyphs/30/wifi-logo.png").toURL();
+                java.net.URL toiletUrl = new java.net.URI("https://img.icons8.com/metro/26/toilet-bowl.png").toURL();
+                java.net.URL dinnerUrl = new java.net.URI("https://img.icons8.com/fluency-systems-regular/48/dinner-time.png").toURL();
+                JLabel stopwatchIcon = new JLabel(new ImageIcon(new ImageIcon(stopwatchUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
+                JLabel wifiIcon = new JLabel(new ImageIcon(new ImageIcon(wifiUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
+                JLabel toiletIcon = new JLabel(new ImageIcon(new ImageIcon(toiletUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
+                JLabel dinnerIcon = new JLabel(new ImageIcon(new ImageIcon(dinnerUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
+                Dimension iconDim = new Dimension(32, 32);
+                stopwatchIcon.setPreferredSize(iconDim);
+                wifiIcon.setPreferredSize(iconDim);
+                toiletIcon.setPreferredSize(iconDim);
+                dinnerIcon.setPreferredSize(iconDim);
+                iconsPanel.add(stopwatchIcon);
+                iconsPanel.add(wifiIcon);
+                iconsPanel.add(toiletIcon);
+                iconsPanel.add(dinnerIcon);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return iconsPanel;
+        }
+        private JLabel createRouteLabel() {
+            JLabel label = new JLabel(trip.getOrigin() + " → " + trip.getDestination());
+            label.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            label.setForeground(new Color(30, 30, 30));
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            return label;
+        }
+        private JPanel createBuyButtonPanel(Color mainColor) {
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            panel.setOpaque(false);
             JButton buyButton = new JButton("Satın Al") {
                 @Override
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(52, 152, 219));
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                    // Drop shadow
+                    g2.setColor(new Color(0,0,0,30));
+                    g2.fillRoundRect(4, getHeight()-10, getWidth()-8, 10, 14, 14);
+                    // Button gradient
+                    GradientPaint gp = new GradientPaint(
+                        0, 0, mainColor.darker(),
+                        getWidth(), getHeight(), mainColor
+                    );
+                    g2.setPaint(gp);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
                     super.paintComponent(g2);
                     g2.dispose();
                 }
             };
-            buyButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            buyButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
             buyButton.setForeground(Color.WHITE);
             buyButton.setBorderPainted(false);
             buyButton.setFocusPainted(false);
             buyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            buyButton.setPreferredSize(new Dimension(80, 25));
+            buyButton.setPreferredSize(new Dimension(120, 44));
             buyButton.addActionListener(e -> {
-                int voyageId = trip.getVoyageId();
-                int seatCount = trip.getSeatCount();
-                String seatArrangement = trip.getSeatArrangement();
-                SeatSelectionPanel seatPanel = new SeatSelectionPanel(voyageId, seatCount, seatArrangement, customer);
-                JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                JDialog dialog = new JDialog(topFrame, "Koltuk Seçimi", true);
-                dialog.setContentPane(seatPanel);
-                dialog.pack();
-                dialog.setLocationRelativeTo(topFrame);
-                dialog.setVisible(true);
+                if (availableSeats <= 0) {
+                    JOptionPane.showMessageDialog(this, "Üzgünüz, bu seferde boş koltuk kalmamıştır.", "Uyarı", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                JFrame seatFrame = new JFrame("Koltuk Seçimi");
+                seatFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                seatFrame.setContentPane(new view.SeatSelectionPanel(
+                    trip.getVoyageId(),
+                    trip.getSeatCount(),
+                    trip.getSeatArrangement(),
+                    customer,
+                    mainView,
+                    reservationsPanel
+                ));
+                seatFrame.pack();
+                seatFrame.setLocationRelativeTo(null);
+                seatFrame.setVisible(true);
             });
-            gbc.gridx = 2;
-            gbc.gridy = 0;
-            gbc.anchor = GridBagConstraints.EAST;
-            gbc.weightx = 0.0;
-            gbc.insets = new Insets(0, 15, 0, 15);
-            bottomPanel.add(buyButton, gbc);
-
-            card.add(bottomPanel, BorderLayout.SOUTH);
-
-            add(card, BorderLayout.CENTER);
+            panel.add(buyButton);
+            return panel;
         }
     }
         // Tam yuvarlak köşe için özel border

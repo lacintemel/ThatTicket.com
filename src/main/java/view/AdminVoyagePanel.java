@@ -185,6 +185,7 @@ public class AdminVoyagePanel extends JPanel {
         titleLabel = new JLabel(voyageToUpdate == null ? "Yeni Sefer Oluştur" : "Sefer Güncelle", SwingConstants.CENTER);
         titleLabel.setFont(titleFont);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         topPanel.add(titleLabel, BorderLayout.CENTER);
         
         // Sağ üstte uygulamaya dön butonu
@@ -206,12 +207,13 @@ public class AdminVoyagePanel extends JPanel {
         backButton.setFocusPainted(false);
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.setPreferredSize(new Dimension(170, 36));
+        backButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12)); // Added vertical padding
         backButton.addActionListener(e -> {
             if (mainFrame instanceof AOOPProject) {
                 ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
             }
         });
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10)); // Added horizontal and vertical gaps
         rightPanel.setOpaque(false);
         rightPanel.add(backButton);
         topPanel.add(rightPanel, BorderLayout.EAST);
@@ -451,8 +453,6 @@ public class AdminVoyagePanel extends JPanel {
                             "Sefer eklendi fakat arayüz güncellenirken bir hata oluştu. Lütfen ana sayfaya dönüp seferleri kontrol edin.", 
                             "Uyarı", 
                             JOptionPane.WARNING_MESSAGE);
-                            
-                        // Ana ekrana dön
                         if (mainFrame instanceof AOOPProject) {
                             ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
                         }

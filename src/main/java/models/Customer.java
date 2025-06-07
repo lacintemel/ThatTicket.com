@@ -63,25 +63,25 @@ public class Customer extends User implements Observer{
         getUsersHashMap().put(customer.getEmail(), customer);
     }
     
-    public void reservation(int id, int[] seatNumbers){
+    public void reservation(int id, int[] seatNumbers, String gender){
         for (int seatNumber: seatNumbers){
-            reservation(id, seatNumber);
+            reservation(id, seatNumber, gender);
         }
     }
     
-    public void reservation(int id, int seatNumber){
-        ReservationCommand reservation = new ReservationCommand(this, Voyage.getVoyageHashMap().get(id), seatNumber);
+    public void reservation(int id, int seatNumber, String gender){
+        ReservationCommand reservation = new ReservationCommand(this, Voyage.getVoyageHashMap().get(id), seatNumber, gender);
         commandCaller.executeCommand(reservation);
     }
     
-    public void cancelReservation(int id, int[] seatNumbers){
+    public void cancelReservation(int id, int[] seatNumbers, String gender){
         for (int seatNumber: seatNumbers){
-            cancelReservation(id, seatNumber);
+            cancelReservation(id, seatNumber, gender);
         }
     }
     
-    public void cancelReservation(int id, int seatNumber){
-        ReservationCommand cancelReservation = new ReservationCommand(this, Voyage.getVoyageHashMap().get(id), seatNumber);
+    public void cancelReservation(int id, int seatNumber, String gender){
+        ReservationCommand cancelReservation = new ReservationCommand(this, Voyage.getVoyageHashMap().get(id), seatNumber, gender);
         commandCaller.executeCommand(cancelReservation);
     }
     

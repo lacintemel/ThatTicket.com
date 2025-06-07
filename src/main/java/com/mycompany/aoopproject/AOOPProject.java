@@ -58,10 +58,12 @@ public class AOOPProject extends JFrame {
     }
 
     public void showMainView(JPanel mainPanel) {
+        System.out.println("showMainView called with panel: " + mainPanel.getClass().getName()); // Debug message
         getContentPane().removeAll();
         getContentPane().add(mainPanel, BorderLayout.CENTER);
         revalidate();
         repaint();
+        System.out.println("showMainView completed"); // Debug message
     }
 
     // ADMIN PANEL FONKSİYONU
