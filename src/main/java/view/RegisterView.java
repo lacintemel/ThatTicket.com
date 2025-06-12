@@ -5,6 +5,7 @@ import java.awt.*;
 import javax.swing.border.Border;
 import models.User;
 import services.DatabaseService;
+import com.mycompany.aoopproject.AOOPProject;
 
 public class RegisterView extends JPanel {
     public JCheckBox adminCheckBox;
@@ -12,15 +13,17 @@ public class RegisterView extends JPanel {
     public JPasswordField passwordField;
     public JButton registerBtn;
     public JLabel signInLabel;
-    private JPanel contentPanel;
+    private JPanel leftPanel;
+    private AOOPProject aoopProject;
 
-    public RegisterView() {
+    public RegisterView(AOOPProject aoopProject) {
+        this.aoopProject = aoopProject;
         setLayout(new BorderLayout());
         setBackground(new Color(245, 247, 250));
         setPreferredSize(new Dimension(900, 520));
 
         // Sol Panel
-        JPanel leftPanel = new JPanel(new BorderLayout()) {
+        this.leftPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -32,8 +35,8 @@ public class RegisterView extends JPanel {
                 g2.fillRect(0, 0, getWidth(), getHeight());
             }
         };
-        leftPanel.setPreferredSize(new Dimension(480, 520));
-        leftPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        this.leftPanel.setPreferredSize(new Dimension(480, 520));
+        this.leftPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
         // Kart Paneli
         JPanel cardPanel = new JPanel(null) {
@@ -146,7 +149,7 @@ public class RegisterView extends JPanel {
 
             // Kullanıcı oluştur
             User user = new User(
-                String.valueOf(System.currentTimeMillis()), // Basit bir ID oluştur
+                String.valueOf(DatabaseService.getNextUserId()), // Get next available user ID
                 username,
                 email,
                 password,
@@ -156,7 +159,8 @@ public class RegisterView extends JPanel {
             // Veritabanına kaydet
             if (DatabaseService.addUser(user)) {
                 JOptionPane.showMessageDialog(this, "Kayıt başarılı!", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
-                showLogin();
+                clearFields();
+                aoopProject.showLogin();
             } else {
                 JOptionPane.showMessageDialog(this, "Kayıt sırasında bir hata oluştu!", "Hata", JOptionPane.ERROR_MESSAGE);
             }
@@ -176,13 +180,13 @@ public class RegisterView extends JPanel {
         cardHolder.setOpaque(false);
         cardHolder.setPreferredSize(new Dimension(480, 520));
         cardHolder.add(cardPanel);
-        leftPanel.add(cardHolder, BorderLayout.CENTER);
+        this.leftPanel.add(cardHolder, BorderLayout.CENTER);
 
         // Sağ Panel
         TransportPanel transportPanel = new TransportPanel();
 
         // Ana Panel
-        add(leftPanel, BorderLayout.WEST);
+        add(this.leftPanel, BorderLayout.WEST);
         add(transportPanel, BorderLayout.CENTER);
     }
 
@@ -305,17 +309,10 @@ public class RegisterView extends JPanel {
         }
     }
 
-    private void showLogin() {
-        if (contentPanel != null) {
-            contentPanel.removeAll();
-            LoginView loginView = new LoginView();
-            contentPanel.add(loginView.getLeftPanel(), BorderLayout.CENTER);
-            contentPanel.revalidate();
-            contentPanel.repaint();
-        }
-    }
-
-    public void setContentPanel(JPanel panel) {
-        this.contentPanel = panel;
+    private void clearFields() {
+        usernameField.setText("");
+        passwordField.setText("");
+        adminCodeField.setText("");
+        emailField.setText("");
     }
 }

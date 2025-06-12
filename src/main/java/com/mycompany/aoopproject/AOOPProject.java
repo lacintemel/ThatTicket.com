@@ -14,6 +14,7 @@ import java.awt.*;
 public class AOOPProject extends JFrame {
     private LoginView loginView;
     private RegisterView registerView;
+    private JPanel currentPanel; // O an görüntülenen paneli tutacak
 
     public AOOPProject() {
         setTitle("Rezervasyon Sistemi");
@@ -22,11 +23,12 @@ public class AOOPProject extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        loginView = new LoginView();
-        registerView = new RegisterView();
+        loginView = new LoginView(this);
+        registerView = new RegisterView(this);
 
         // Başlangıçta login paneli göster
-        showLogin();
+        currentPanel = loginView; // loginView'ı başlangıç paneli olarak ayarla
+        add(currentPanel, BorderLayout.CENTER); // Başlangıç panelini frame'e ekle
 
         // LoginView'da Sign Up tıklanınca RegisterView'a geç
         loginView.getSignUpLabel().addMouseListener(new java.awt.event.MouseAdapter() {
@@ -43,24 +45,27 @@ public class AOOPProject extends JFrame {
         });
     }
 
-    private void showRegister() {
-        getContentPane().removeAll();
-        getContentPane().add(registerView, BorderLayout.CENTER);
+    public void showRegister() {
+        remove(currentPanel); // Mevcut paneli kaldır
+        currentPanel = registerView; // registerView'ı yeni panel olarak ayarla
+        add(currentPanel, BorderLayout.CENTER); // Yeni paneli frame'e ekle
         revalidate();
         repaint();
     }
 
     public void showLogin() {
-        getContentPane().removeAll();
-        getContentPane().add(loginView, BorderLayout.CENTER);
+        remove(currentPanel); // Mevcut paneli kaldır
+        currentPanel = loginView; // loginView'ı yeni panel olarak ayarla
+        add(currentPanel, BorderLayout.CENTER); // Yeni paneli frame'e ekle
         revalidate();
         repaint();
     }
 
     public void showMainView(JPanel mainPanel) {
         System.out.println("showMainView called with panel: " + mainPanel.getClass().getName()); // Debug message
-        getContentPane().removeAll();
-        getContentPane().add(mainPanel, BorderLayout.CENTER);
+        remove(currentPanel); // Mevcut paneli kaldır
+        currentPanel = mainPanel; // mainPanel'i yeni panel olarak ayarla
+        add(currentPanel, BorderLayout.CENTER); // Yeni paneli frame'e ekle
         revalidate();
         repaint();
         System.out.println("showMainView completed"); // Debug message
@@ -68,14 +73,13 @@ public class AOOPProject extends JFrame {
 
     // ADMIN PANEL FONKSİYONU
     public void showAdminPanel(Admin admin, boolean isBusMode) {
-        // Giriş yapan admin'den Customer nesnesi oluştur
         Customer customer = new Customer(admin.getId(), admin.getName(), "", admin.getEmail(), admin.getPassword());
         customer.setUser_type("Admin");
         AdminVoyagePanel adminPanel = new AdminVoyagePanel(admin, customer, this);
-        // Set initial transport mode
         adminPanel.setTransportMode(isBusMode);
-        getContentPane().removeAll();
-        getContentPane().add(adminPanel, BorderLayout.CENTER);
+        remove(currentPanel); // Mevcut paneli kaldır
+        currentPanel = adminPanel; // adminPanel'i yeni panel olarak ayarla
+        add(currentPanel, BorderLayout.CENTER); // Yeni paneli frame'e ekle
         revalidate();
         repaint();
     }

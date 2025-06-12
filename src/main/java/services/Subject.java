@@ -12,4 +12,6 @@ import models.Voyage;
  */
 public interface Subject {
     void notifyObservers(Voyage voyage);
+    void addObserver(Observer observer);
+    void removeObserver(Observer observer);
 }

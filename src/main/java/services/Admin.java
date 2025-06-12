@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package services;
 
 import commands.AddVoyageCommand;
@@ -10,9 +6,10 @@ import commands.UpdateVoyageCommand;
 import commands.DeleteVoyageCommand;
 import commands.CommandCaller;
 import java.util.ArrayList;
-import models.Customer;
 import models.User;
 import models.Voyage;
+import models.Customer;
+import services.DatabaseService;
 
 /**
  *
@@ -20,25 +17,41 @@ import models.Voyage;
  */
 public class Admin extends User implements Subject{
     
+    private static Admin instance = null;
     private String adminCode; 
-    private static ArrayList<Observer> observers = new ArrayList<>();
+    private ArrayList<Observer> observers = new ArrayList<>();
 
     
  
-    public Admin(String id,String adminCode, String name, String email, String password){
-        super(id,name, email, password, "Admin");
+    // Protected constructor for inheritance
+    public Admin(String id, String adminCode, String name, String email, String password) {
+        super(id, name, email, password, "Admin");
         this.adminCode = adminCode;
         
         commandCaller = new CommandCaller();
-       
-
+        this.observers = new ArrayList<>();
+        System.out.println("Admin oluşturuldu: " + name + ", ID: " + id);
     }
     
-    public Admin(){
+    // Default constructor for inheritance
+    protected Admin() {
         super();
+        commandCaller = new CommandCaller();
+        this.observers = new ArrayList<>();
+    }
+    
+    public static Admin getInstance(String id, String adminCode, String name, String email, String password) {
+        if (instance == null) {
+            instance = new Admin(id, adminCode, name, email, password);
+        }
+        return instance;
+    }
+    
+    public static Admin getInstance() {
+        return instance;
     }
 
-    public static ArrayList<Observer> getObservers() {
+    public ArrayList<Observer> getObservers() {
         return observers;
     }
     
@@ -46,25 +59,59 @@ public class Admin extends User implements Subject{
  
     
     
-    public void register(String id,String adminCode, String name, String email, String password){
-        if( Director.getAdminCodes().contains(adminCode) ){
+    public void register(String id, String adminCode, String name, String email, String password) {
+        System.out.println("\n=== Admin Kaydı Başlıyor ===");
+        System.out.println("Admin Kodu: " + adminCode);
+        System.out.println("İsim: " + name);
+        System.out.println("Email: " + email);
+        
+        if (Director.getAdminCodes().contains(adminCode)) {
             Director.getAdminCodes().remove(adminCode);
-            Admin admin = new Admin(id,adminCode, name, email, password);
-            User.getUsersHashMap().put(admin.getEmail(), admin);
-        }
-        else{
+            
+            // Singleton instance'ı oluştur
+            instance = getInstance(id, adminCode, name, email, password);
+            
+            // HashMap'e ekle
+            User.getUsersHashMap().put(instance.getEmail(), instance);
+            System.out.println("Admin HashMap'e eklendi. Toplam kullanıcı sayısı: " + User.getUsersHashMap().size());
+            
+            // Veritabanına kaydet
+            try {
+                User user = new User(id, name, email, password, "Admin");
+                DatabaseService.addUser(user);
+                System.out.println("Admin veritabanına kaydedildi");
+            } catch (Exception e) {
+                System.err.println("Admin veritabanına kaydedilirken hata: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
+            System.out.println("=== Admin Kaydı Tamamlandı ===\n");
+        } else {
+            System.err.println("Geçersiz admin kodu: " + adminCode);
             throw new IllegalArgumentException("Geçersiz admin kodu!");
         }
     }
     
-    public void addVoyage(int voyageId,String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement){
+    public void addVoyage(int voyageId, String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement) {
+        System.out.println("\n=== Yeni Sefer Ekleme Başladı ===");
+        System.out.println("Admin ID: " + getId());
+        System.out.println("Observer sayısı: " + observers.size());
+        
         // 1. Veritabanına kaydet
-        DatabaseService.addVoyage(type, firm, origin, destination, startTime, arrivalTime, seatCount, price, seatArrangement);
+        int dbVoyageId = DatabaseService.addVoyage(type, firm, origin, destination, startTime, arrivalTime, seatCount, price, seatArrangement);
+        System.out.println("Sefer veritabanına kaydedildi. ID: " + dbVoyageId);
 
         // 2. Komut deseni ile de işlemi gerçekleştir
         Voyage voyage = VoyageFactory.createVoyage(voyageId, type, firm, origin, destination, startTime, arrivalTime, seatCount, price, seatArrangement);
         AddVoyageCommand addVoyage = new AddVoyageCommand(voyage, this);
         commandCaller.executeCommand(addVoyage);
+        System.out.println("Sefer komut deseni ile eklendi");
+        
+        // 3. Observer pattern ile bildirimleri gönder
+        System.out.println("Bildirimler gönderiliyor...");
+        notifyObservers(voyage);
+        
+        System.out.println("=== Yeni Sefer Ekleme Tamamlandı ===\n");
     }
     
     public void deleteVoyage(int id){        
@@ -85,26 +132,42 @@ public class Admin extends User implements Subject{
 
     @Override
     public void notifyObservers(Voyage voyage) {
-        String type = voyage.getType();
-        String origin = voyage.getOrigin();
-        String destination = voyage.getDestination();
-        String startTime = voyage.getStartTime();
+        System.out.println("\n=== Bildirim Gönderme Başladı ===");
+        System.out.println("Toplam observer sayısı: " + observers.size());
         
-        for (Observer o : Admin.getObservers()){
-            Customer customer = (Customer) o;
-            for(ArrayList<String> desires : customer.getDesiredVoyages()){
-                if (type.equalsIgnoreCase(desires.get(0)) && origin.equalsIgnoreCase(desires.get(1)) 
-                           && destination.equalsIgnoreCase(desires.get(2)) && startTime.equalsIgnoreCase(desires.get(3))) {
-                    o.updateNotifications(voyage);
+        for (Observer observer : observers) {
+            try {
+                if (observer instanceof Customer) {
+                    Customer customer = (Customer) observer;
+                    System.out.println("Observer'a bildirim gönderiliyor: " + customer.getName());
+                    observer.updateNotifications(voyage);
                 }
+            } catch (Exception e) {
+                System.out.println("Bildirim gönderilirken hata: " + e.getMessage());
+                e.printStackTrace();
             }
         }
+        System.out.println("=== Bildirim Gönderme Tamamlandı ===\n");
+    }
+
+    @Override
+    public void addObserver(Observer observer) {
+        if (!observers.contains(observer)) {
+            observers.add(observer);
+            System.out.println("Yeni observer eklendi. Toplam observer sayısı: " + observers.size());
+            System.out.println("Observer tipi: " + observer.getClass().getSimpleName());
+        }
+    }
+
+    @Override
+    public void removeObserver(Observer observer) {
+        observers.remove(observer);
+        System.out.println("Observer kaldırıldı. Kalan observer sayısı: " + observers.size());
     }
     
     public static Admin getAdminByEmail(String email) {
-        User user = User.getUsersHashMap().get(email);
-        if (user instanceof Admin) {
-            return (Admin) user;
+        if (instance != null && instance.getEmail().equals(email)) {
+            return instance;
         }
         return null;
     }

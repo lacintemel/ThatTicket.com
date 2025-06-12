@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import models.Customer;
+import models.Voyage;
 import services.DatabaseService;
 import javax.swing.border.AbstractBorder;
 import view.SeatSelectionPanel.SelectedSeat;
@@ -145,6 +146,24 @@ public class PaymentDialog extends JDialog {
                     seat.seatNum,
                     seat.gender
                 );
+                
+                // Bildirimi ekle
+                try {
+                    String notification = "🎫 [Rezervasyon] " + 
+                        Voyage.getVoyageHashMap().get(voyageId).getOrigin() + " - " + 
+                        Voyage.getVoyageHashMap().get(voyageId).getDestination() + 
+                        " seferi için " + seat.seatNum + " numaralı koltuk ayrıldı. Ödeme başarıyla tamamlandı.";
+                    
+                    System.out.println("\n=== Bildirim Ekleme Başladı ===");
+                    System.out.println("User ID: " + customer.getId());
+                    System.out.println("Bildirim mesajı: " + notification);
+                    
+                    DatabaseService.addNotification(Integer.parseInt(customer.getId()), notification);
+                    System.out.println("✅ Bildirim başarıyla eklendi!");
+                } catch (Exception ex) {
+                    System.err.println("❌ Bildirim eklenirken hata oluştu: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
             }
             
             // Rezervasyonlar panelini güncelle

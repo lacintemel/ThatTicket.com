@@ -42,46 +42,44 @@ public class DatabaseService {
     private static void createTables() {
         try (Statement stmt = connection.createStatement()) {
             // Users tablosu
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    email TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
-                    user_type TEXT NOT NULL
-                )
-            """);
+            stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "name TEXT NOT NULL," +
+                "email TEXT UNIQUE NOT NULL," +
+                "password TEXT NOT NULL," +
+                "user_type TEXT NOT NULL)");
 
             // Voyages tablosu
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS voyages (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT NOT NULL,
-                    firm TEXT,
-                    origin TEXT NOT NULL,
-                    destination TEXT NOT NULL,
-                    start_time TIMESTAMP,
-                    arrival_time TIMESTAMP,
-                    price DECIMAL(10,2),
-                    seat_arrangement TEXT,
-                    seat_count INTEGER,
-                    status TEXT DEFAULT 'ACTIVE'
-                )
-            """);
+            stmt.execute("CREATE TABLE IF NOT EXISTS voyages (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "type TEXT NOT NULL," +
+                "firm TEXT NOT NULL," +
+                "origin TEXT NOT NULL," +
+                "destination TEXT NOT NULL," +
+                "start_time TEXT NOT NULL," +
+                "arrival_time TEXT NOT NULL," +
+                "seat_count INTEGER NOT NULL," +
+                "price REAL NOT NULL," +
+                "seat_arrangement TEXT NOT NULL)");
 
             // Reservations tablosu
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS reservations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER,
-                    voyage_id INTEGER,
-                    seat_number INTEGER,
-                    gender TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id),
-                    FOREIGN KEY (voyage_id) REFERENCES voyages(id)
-                )
-            """);
+            stmt.execute("CREATE TABLE IF NOT EXISTS reservations (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "user_id INTEGER," +
+                "voyage_id INTEGER," +
+                "seat_number INTEGER," +
+                "gender TEXT," +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                "FOREIGN KEY (user_id) REFERENCES users(id)," +
+                "FOREIGN KEY (voyage_id) REFERENCES voyages(id))");
+
+            // Notifications tablosu
+            stmt.execute("CREATE TABLE IF NOT EXISTS notifications (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "user_id INTEGER," +
+                "message TEXT NOT NULL," +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                "FOREIGN KEY (user_id) REFERENCES users(id))");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -96,7 +94,7 @@ public class DatabaseService {
             while (rs.next()) {
                 User user;
                 if ("admin".equalsIgnoreCase(rs.getString("user_type"))) {
-                    user = new Admin(
+                    user = Admin.getInstance(
                         rs.getString("id"),
                         "1111",
                         rs.getString("name"),
@@ -227,7 +225,7 @@ public class DatabaseService {
             if (rs.next()) {
                 User user;
                 if ("admin".equalsIgnoreCase(rs.getString("user_type"))) {
-                    user = new Admin(
+                    user = Admin.getInstance(
                         rs.getString("id"),
                         "1111",
                         rs.getString("name"),
@@ -497,5 +495,129 @@ public class DatabaseService {
             e.printStackTrace();
         }
         return reservations;
+    }
+
+    // Bildirim ekle
+    public static void addNotification(int userId, String notification) {
+        String sql = "INSERT INTO notifications (user_id, message,created_at) VALUES (?, ?,CURRENT_TIMESTAMP)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setString(2, notification);
+            int affected = pstmt.executeUpdate();
+            if (affected > 0) {
+                System.out.println("Bildirim başarıyla eklendi - User ID: " + userId);
+            } else {
+                System.out.println("Bildirim eklenemedi!");
+            }
+        } catch (SQLException e) {
+            System.out.println("Bildirim eklenirken hata: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Kullanıcının bildirimlerini getir
+    public static ArrayList<String[]> getNotificationsForUser(int userId) {
+        ArrayList<String[]> notifications = new ArrayList<>();
+        String sql = "SELECT message, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                String[] notificationData = new String[2];
+                notificationData[0] = rs.getString("message");
+                notificationData[1] = rs.getString("created_at");
+                notifications.add(notificationData);
+            }
+        } catch (SQLException e) {
+            System.out.println("Bildirimler getirilirken hata: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return notifications;
+    }
+
+    // Kullanıcının bildirimlerini temizle
+    public static void clearNotificationsForUser(int userId) {
+        String sql = "DELETE FROM notifications WHERE user_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            int affected = pstmt.executeUpdate();
+            System.out.println(userId + " ID'li kullanıcının " + affected + " bildirimi silindi.");
+        } catch (SQLException e) {
+            System.out.println("Bildirimler silinirken hata: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Kullanıcının bildirim tercihlerini kaydet
+    public static void addNotificationPreference(int userId, String type, String origin, String destination, String schedule) {
+        String sql = "INSERT INTO notification_preferences (user_id, type, origin, destination, schedule, created_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setString(2, type);
+            pstmt.setString(3, origin);
+            pstmt.setString(4, destination);
+            pstmt.setString(5, schedule);
+            
+            int affected = pstmt.executeUpdate();
+            if (affected > 0) {
+                System.out.println("✅ Bildirim tercihi başarıyla kaydedildi!");
+                System.out.println("User ID: " + userId);
+                System.out.println("Sefer Tipi: " + type);
+                System.out.println("Kalkış: " + origin);
+                System.out.println("Varış: " + destination);
+                System.out.println("Tarih: " + schedule);
+            } else {
+                System.out.println("❌ Bildirim tercihi kaydedilemedi!");
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Bildirim tercihi kaydedilirken hata oluştu: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Admin kullanıcılarını getir
+    public static ArrayList<String[]> getAdmins() {
+        ArrayList<String[]> admins = new ArrayList<>();
+        String sql = "SELECT id, name, email, password FROM users WHERE user_type = 'Admin'";
+        
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                String[] adminInfo = new String[4];
+                adminInfo[0] = rs.getString("id");
+                adminInfo[1] = rs.getString("name");
+                adminInfo[2] = rs.getString("email");
+                adminInfo[3] = rs.getString("password");
+                admins.add(adminInfo);
+            }
+            
+            System.out.println("Toplam " + admins.size() + " admin bulundu");
+            for (String[] admin : admins) {
+                System.out.println("Admin ID: " + admin[0] + ", İsim: " + admin[1] + ", Email: " + admin[2]);
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Adminler getirilirken hata oluştu: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return admins;
+    }
+
+    public static int getNextUserId() {
+        try {
+            String query = "SELECT MAX(CAST(id AS INTEGER)) as max_id FROM users";
+            ResultSet rs = connection.createStatement().executeQuery(query);
+            if (rs.next()) {
+                int maxId = rs.getInt("max_id");
+                return maxId + 1;
+            }
+            return 1; // If no users exist yet, start with ID 1
+        } catch (SQLException e) {
+            System.err.println("Error getting next user ID: " + e.getMessage());
+            return 1; // Default to 1 if there's an error
+        }
     }
 }

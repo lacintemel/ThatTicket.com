@@ -11,6 +11,8 @@ import services.DatabaseService;
 import services.Admin;
 import com.toedter.calendar.JDateChooser;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import models.User;
 
 public class MainView extends JPanel {
     private JList<String> busList;
@@ -28,9 +30,12 @@ public class MainView extends JPanel {
     private JComboBox<String> originCombo, destCombo;
     private JDateChooser dateChooser;
     private JLabel noVoyagesLabel;
+    private boolean isAdmin;
+    private JPanel notificationsPanel;
 
-    public MainView(Customer customer, boolean isBusMode, JFrame mainFrame) {
-        this.customer = customer;
+    public MainView(User user, boolean isBusMode, JFrame mainFrame) {
+        this.customer = (user instanceof Customer) ? (Customer) user : null; // Set customer only if it's a Customer instance
+        this.isAdmin = (user instanceof Admin);
         this.isBusMode = isBusMode;
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout());
@@ -39,6 +44,18 @@ public class MainView extends JPanel {
         } else {
             allTrips = new ArrayList<>(DatabaseService.getAllFlightVoyages());
         }
+
+        // Sort voyages by date
+        allTrips.sort((v1, v2) -> {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+                Date date1 = sdf.parse(v1.getStartTime());
+                Date date2 = sdf.parse(v2.getStartTime());
+                return date1.compareTo(date2);
+            } catch (Exception e) {
+                return 0;
+            }
+        });
 
         Color mainBg = new Color(245,247,250);
         // Üst panel: sol (sign out), orta (başlık), sağ (toggle)
@@ -78,11 +95,9 @@ public class MainView extends JPanel {
         signOutBtn.setPreferredSize(new Dimension(120, 38));
         signOutBtn.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         signOutBtn.addActionListener(e -> {
-            if (mainFrame != null) {
-                mainFrame.getContentPane().removeAll();
-                mainFrame.getContentPane().add(new LoginView(), BorderLayout.CENTER);
-                mainFrame.revalidate();
-                mainFrame.repaint();
+            if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
+                com.mycompany.aoopproject.AOOPProject aoopProjectFrame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
+                aoopProjectFrame.showLogin();
             }
         });
         headerPanel.add(signOutBtn, BorderLayout.WEST);
@@ -183,6 +198,9 @@ public class MainView extends JPanel {
         destCombo = new JComboBox<>(turkishCities);
         dateChooser = new JDateChooser();
         dateChooser.setPreferredSize(new Dimension(200, 30));
+        
+        // Set initial date to today after dateChooser is initialized
+        dateChooser.setDate(new java.util.Date());
 
         filterPanel.add(new JLabel("Kalkış:"));
         filterPanel.add(originCombo);
@@ -190,6 +208,87 @@ public class MainView extends JPanel {
         filterPanel.add(destCombo);
         filterPanel.add(new JLabel("Tarih:"));
         filterPanel.add(dateChooser);
+
+        // Notify Me button
+        JButton notifyButton = new JButton("Notify Me") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(
+                    0, 0, isBusMode ? new Color(52, 152, 219).darker() : new Color(220, 53, 69).darker(),
+                    getWidth(), getHeight(), isBusMode ? new Color(52, 152, 219) : new Color(220, 53, 69)
+                );
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        notifyButton.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        notifyButton.setForeground(Color.WHITE);
+        notifyButton.setBorderPainted(false);
+        notifyButton.setFocusPainted(false);
+        notifyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        notifyButton.setPreferredSize(new Dimension(120, 38));
+        
+        notifyButton.addActionListener(e -> {
+            String selectedOrigin = (String) originCombo.getSelectedItem();
+            String selectedDest = (String) destCombo.getSelectedItem();
+            Date selectedDate = dateChooser.getDate();
+
+            if (selectedOrigin.equals("Select City") || selectedDest.equals("Select City") || selectedDate == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Lütfen kalkış, varış ve tarih bilgilerini seçin!",
+                    "Uyarı",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            if (customer == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Bildirim tercihleri sadece müşteri hesapları için geçerlidir.",
+                    "Bilgi",
+                    JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            // İstenen seferi ekle
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            String schedule = sdf.format(selectedDate);
+
+            try {
+                System.out.println("\n=== Bildirim Tercihi Kaydediliyor ===");
+                System.out.println("Müşteri ID: " + customer.getId());
+                System.out.println("Müşteri Adı: " + customer.getName());
+                System.out.println("Sefer Tipi: " + (isBusMode ? "Bus" : "Flight"));
+                System.out.println("Kalkış: " + selectedOrigin);
+                System.out.println("Varış: " + selectedDest);
+                System.out.println("Tarih: " + schedule);
+
+                // Müşteri nesnesine ekle
+                customer.addDesiredVoyage(
+                    isBusMode ? "Bus" : "Flight",
+                    selectedOrigin,
+                    selectedDest,
+                    schedule
+                );
+
+                System.out.println("✅ Bildirim tercihi başarıyla kaydedildi!");
+
+                JOptionPane.showMessageDialog(this,
+                    "Seçtiğiniz rotaya yeni sefer eklendiğinde bildirim alacaksınız!",
+                    "Bildirim Kaydı",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (Exception ex) {
+                System.err.println("❌ Bildirim tercihi kaydedilirken hata oluştu: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+        
+        filterPanel.add(Box.createHorizontalStrut(20));
+        filterPanel.add(notifyButton);
 
         // Add action listeners for filtering
         originCombo.addActionListener(e -> validateCities());
@@ -231,6 +330,8 @@ public class MainView extends JPanel {
         noVoyagesLabel = new JLabel("", SwingConstants.CENTER);
         noVoyagesLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         noVoyagesLabel.setForeground(new Color(100, 100, 100));
+        noVoyagesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        noVoyagesLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         noVoyagesLabel.setVisible(false);
         cardListPanel.add(noVoyagesLabel);
 
@@ -261,7 +362,7 @@ public class MainView extends JPanel {
         // Add both panels to mainPanel
         mainPanel.add(tripsPanel, "TRIPS");
         mainPanel.add(reservationsPanel, "RESERVATIONS");
-        updateReservationsPanel(customer, reservationsPanel);
+        mainPanel.add(createNotificationsPanel(), "NOTIFICATIONS");
 
         // Tabbar (bottom, centered)
         JPanel tabbar = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -327,8 +428,37 @@ public class MainView extends JPanel {
         btnReservations.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnReservations.setPreferredSize(new Dimension(140, 35));
         
+        // Notifications button
+        JButton btnNotifications = new JButton("Bildirimler") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if ("NOTIFICATIONS".equals(currentTab)) {
+                    g2.setColor(tabActiveBg);
+                    setForeground(tabActiveText);
+                } else {
+                    g2.setColor(Color.WHITE);
+                    setForeground(tabTextGray);
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                if (!"NOTIFICATIONS".equals(currentTab)) {
+                    g2.setColor(tabGray);
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.drawRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                }
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        btnNotifications.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnNotifications.setBorderPainted(false);
+        btnNotifications.setFocusPainted(false);
+        btnNotifications.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnNotifications.setPreferredSize(new Dimension(140, 35));
+
         // Admin için "Yeni Sefer Ekle" butonu
-        if (customer.getUser_type().equals("Admin")) {
+        if (isAdmin) {
             JButton addVoyageBtn = new JButton("Yeni Sefer Ekle") {
                 @Override
                 protected void paintComponent(Graphics g) {
@@ -355,7 +485,8 @@ public class MainView extends JPanel {
             addVoyageBtn.addActionListener(e -> {
                 if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
                     com.mycompany.aoopproject.AOOPProject frame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
-                    Admin admin = new Admin(customer.getId(), "1111", customer.getName(), customer.getEmail(), customer.getPassword());
+                    // Ensure we pass the correct Admin instance
+                    Admin admin = (Admin) user; // Use the 'user' field from MainView constructor
                     frame.showAdminPanel(admin, isBusMode);
                 }
             });
@@ -364,15 +495,21 @@ public class MainView extends JPanel {
             tabbar.add(addVoyageBtn);
             tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(btnReservations);
+            tabbar.add(Box.createHorizontalStrut(12));
+            tabbar.add(btnNotifications);
         } else {
             tabbar.add(btnTrips);
+            tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(btnReservations);
+            tabbar.add(Box.createHorizontalStrut(12));
+            tabbar.add(btnNotifications);
         }
         add(tabbar, BorderLayout.SOUTH);
 
         // Button actions to switch views
         btnTrips.addActionListener(e -> switchTab("TRIPS"));
         btnReservations.addActionListener(e -> switchTab("RESERVATIONS"));
+        btnNotifications.addActionListener(e -> switchTab("NOTIFICATIONS"));
 
         // Show trips by default
         switchTab("TRIPS");
@@ -451,9 +588,17 @@ public class MainView extends JPanel {
 
         // Show/hide no voyages message
         if (!hasMatchingTrips) {
-            String message = "Seçilen kriterlere uygun " + (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
+            String message;
+            if (selectedDate != null) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy");
+                String formattedDate = sdf.format(selectedDate);
+                message = formattedDate + " tarihinde " + (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
+            } else {
+                message = "Seçilen kriterlere uygun " + (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
+            }
             noVoyagesLabel.setText(message);
             noVoyagesLabel.setVisible(true);
+            cardListPanel.add(noVoyagesLabel);
         } else {
             noVoyagesLabel.setVisible(false);
         }
@@ -468,8 +613,12 @@ public class MainView extends JPanel {
         cl.show(mainPanel, name);
         if (name.equals("TRIPS")) {
             dynamicTitle.setText(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri");
-        } else {
+        } else if (name.equals("RESERVATIONS")) {
             dynamicTitle.setText("Rezervasyonlar");
+            updateReservationsPanel(this.customer, reservationsPanel);
+        } else if (name.equals("NOTIFICATIONS")) {
+            dynamicTitle.setText("Bildirimler");
+            updateNotifications();
         }
         // Update tabbar button colors
         revalidate();
@@ -480,6 +629,16 @@ public class MainView extends JPanel {
     public void updateReservationsPanel(Customer customer, JPanel reservationsPanel) {
         System.out.println("Panel güncelleniyor...");
         reservationsCardListPanel.removeAll();
+        
+        if (customer == null) {
+            JLabel emptyLabel = new JLabel("Rezervasyonlar sadece müşteri hesapları için geçerlidir.", SwingConstants.CENTER);
+            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+            reservationsCardListPanel.add(emptyLabel);
+            reservationsCardListPanel.revalidate();
+            reservationsCardListPanel.repaint();
+            return;
+        }
+
         java.util.List<services.DatabaseService.ReservationInfo> reservations = services.DatabaseService.getReservationsForUser(Integer.parseInt(customer.getId()));
         System.out.println("Veritabanından rezervasyon sayısı: " + reservations.size());
         if (reservations.isEmpty()) {
@@ -514,5 +673,116 @@ public class MainView extends JPanel {
 
     public JFrame getMainFrame() {
         return mainFrame;
+    }
+
+    private JPanel createNotificationsPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(240, 245, 255));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Top panel with title and clear button
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        
+        JLabel titleLabel = new JLabel("Tüm Bildirimler");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(51, 51, 51));
+        topPanel.add(titleLabel, BorderLayout.WEST);
+
+        // Clear notifications button
+        JButton clearButton = new JButton("Bildirimleri Temizle") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(getBackground());
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                super.paintComponent(g);
+                g2d.dispose();
+            }
+        };
+        clearButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        clearButton.setForeground(Color.WHITE);
+        clearButton.setBackground(new Color(0, 120, 212));
+        clearButton.setBorderPainted(false);
+        clearButton.setFocusPainted(false);
+        clearButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        clearButton.addActionListener(e -> {
+            DatabaseService.clearNotificationsForUser(Integer.parseInt(customer.getId()));
+            updateNotifications();
+        });
+        topPanel.add(clearButton, BorderLayout.EAST);
+
+        panel.add(topPanel, BorderLayout.NORTH);
+
+        // Notifications panel
+        JPanel notificationsPanel = new JPanel();
+        notificationsPanel.setLayout(new BoxLayout(notificationsPanel, BoxLayout.Y_AXIS));
+        notificationsPanel.setOpaque(false);
+
+        JScrollPane scrollPane = new JScrollPane(notificationsPanel);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // Update notifications immediately
+        updateNotifications(notificationsPanel);
+
+        return panel;
+    }
+
+    private void updateNotifications() {
+        JPanel notificationsPanel = null;
+        for (Component comp : mainPanel.getComponents()) {
+            if (comp instanceof JPanel) {
+                JPanel panel = (JPanel) comp;
+                for (Component subComp : panel.getComponents()) {
+                    if (subComp instanceof JScrollPane) {
+                        JScrollPane scrollPane = (JScrollPane) subComp;
+                        notificationsPanel = (JPanel) scrollPane.getViewport().getView();
+                        break;
+                    }
+                }
+            }
+        }
+        if (notificationsPanel != null) {
+            updateNotifications(notificationsPanel);
+        }
+    }
+    
+    private void updateNotifications(JPanel notificationsPanel) {
+        notificationsPanel.removeAll();
+
+        if (customer != null) { // Only fetch notifications if a customer is logged in
+            ArrayList<String[]> notifications = DatabaseService.getNotificationsForUser(Integer.parseInt(customer.getId()));
+            if (notifications.isEmpty()) {
+                JLabel noNotificationsLabel = new JLabel("Henüz bildiriminiz bulunmuyor.");
+                noNotificationsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                noNotificationsLabel.setForeground(new Color(128, 128, 128));
+                noNotificationsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                notificationsPanel.add(Box.createVerticalGlue());
+                notificationsPanel.add(noNotificationsLabel);
+                notificationsPanel.add(Box.createVerticalGlue());
+            } else {
+                for (String[] notification : notifications) {
+                    NotificationCardPanel card = new NotificationCardPanel(notification[0], notification[1]);
+                    card.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    notificationsPanel.add(card);
+                    notificationsPanel.add(Box.createVerticalStrut(10));
+                }
+            }
+        } else { // For Admin or if no customer is available
+            JLabel noNotificationsLabel = new JLabel("Bildirimler bu hesap türü için geçerli değildir.");
+            noNotificationsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+            noNotificationsLabel.setForeground(new Color(128, 128, 128));
+            noNotificationsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            notificationsPanel.add(Box.createVerticalGlue());
+            notificationsPanel.add(noNotificationsLabel);
+            notificationsPanel.add(Box.createVerticalGlue());
+        }
+
+        notificationsPanel.revalidate();
+        notificationsPanel.repaint();
     }
 }

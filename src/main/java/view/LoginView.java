@@ -6,8 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.border.Border;
 import models.User;
-import models.Customer;
 import services.DatabaseService;
+import com.mycompany.aoopproject.AOOPProject;
 
 public class LoginView extends JPanel {
     private final Color mainBlue = new Color(52, 152, 219);
@@ -25,8 +25,10 @@ public class LoginView extends JPanel {
     private JPasswordField passwordField;
     private boolean isAnimating = false;
     private JButton signInBtn;
+    private AOOPProject aoopProject;
 
-    public LoginView() {
+    public LoginView(AOOPProject aoopProject) {
+        this.aoopProject = aoopProject;
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(900, 520));
 
@@ -112,6 +114,12 @@ public class LoginView extends JPanel {
         signUpLabel.setForeground(new Color(52, 152, 219));
         signUpLabel.setBounds(0, 0, 80, 30);
         signUpLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        signUpLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                aoopProject.showRegister();
+            }
+        });
         bottomLinks.add(signUpLabel);
         // Recovery Password (sağ)
         JLabel recoveryLabel = new JLabel("Recovery Password");
@@ -186,22 +194,27 @@ public class LoginView extends JPanel {
                     }
                     // Başarılıysa önce ana ekrana geçişi başlat, sonra loading'i kapat
                     if (topLevel instanceof com.mycompany.aoopproject.AOOPProject frame) {
-                        if (user instanceof services.Admin) {
-                            frame.showAdminPanel((services.Admin) user, rightPanel.isBusMode());
-                        } else {
-                            Customer customer = new Customer(user.getId(), user.getName(), "", user.getEmail(), user.getPassword());
-                            if (rightPanel.isBusMode()) {
-                                frame.showMainView(new MainView(customer, true, frame));
-                            } else {
-                                frame.showMainView(new MainView(customer, false, frame));
-                            }
+                        emailField.setText("");
+                        passwordField.setText("");
+                        
+                        // Convert User to Customer if user type is "Customer"
+                        if (user.getUser_type().equals("Customer")) {
+                            user = new models.Customer(
+                                user.getId(),
+                                user.getName(),
+                                "", // Empty gender string since it's not available in User
+                                user.getEmail(),
+                                user.getPassword()
+                            );
                         }
+                        
+                        // Always show MainView, which will handle admin/customer specific content
+                        frame.showMainView(new MainView(user, rightPanel.isBusMode(), frame));
                     }
                     loading.dispose();
                 }
             };
             worker.execute();
-            loading.setVisible(true);
         });
         cardPanel.add(signInBtn);
 

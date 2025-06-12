@@ -10,14 +10,14 @@ import java.util.ArrayList;
  *
  * @author enesaltin
  */
-public class Director extends Admin{
+public class Director extends Admin {
     
-    String id = "director";
-    String password = "director";
+    private String id = "director";
+    private String password = "director";
     private static ArrayList<String> adminCodes = new ArrayList<>();
 
     
-    public Director(){
+    public Director() {
         super();
         
          
