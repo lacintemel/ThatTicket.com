@@ -123,15 +123,6 @@ public class ReservationCardPanel extends JPanel {
 
         add(bottomInfoPanel, BorderLayout.SOUTH);
 
-        // Kart tıklanınca ana panelde koltuk seçimi paneli göster
-        this.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (mainView != null) {
-                    mainView.showSeatSelectionPanel(trip, customer);
-                }
-            }
-        });
     }
 
     private JPanel createSeatPanel(Color mainColor) {

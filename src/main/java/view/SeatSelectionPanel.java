@@ -128,8 +128,9 @@ public class SeatSelectionPanel extends JPanel {
         cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         cancelButton.setPreferredSize(new Dimension(120, 38));
         cancelButton.addActionListener(e -> {
-            Window window = SwingUtilities.getWindowAncestor(this);
-            if (window != null) window.dispose();
+            if (mainView != null) {
+                mainView.showReservationsTab(); // Ana görünüme geri dön
+            }
         });
 
         // Rezervasyon butonu
@@ -388,33 +389,56 @@ public class SeatSelectionPanel extends JPanel {
             return;
         }
 
-        // Yan koltuk kontrolü
-        boolean applyGenderRule = true;
-        boolean isSingle = false;
+        boolean applyGenderRule = true; // Default to true
         int seatsPerRow = getSeatsPerRow();
-        int col = (seatNum - 1) % seatsPerRow;
+        int col = (seatNum - 1) % seatsPerRow; // 0-indexed column
 
-        // Tekli koltuk kontrolü
-        if (seatArrangement.equals("2+1")) {
-            isSingle = (col == 1); // Orta koltuk tekli
+        // If it's a 2+1 arrangement and the seat is in the single column (col 0),
+        // then gender rules do not apply for this seat.
+        if (seatArrangement.equals("2+1") && col == 0) {
+            applyGenderRule = false;
         }
 
         String allowedGender = null;
-        if (applyGenderRule && !isSingle) {
+        if (applyGenderRule) {
             int leftSeatNum = (col > 0) ? seatNum - 1 : -1;
             int rightSeatNum = (col < seatsPerRow - 1 && seatNum + 1 <= seatCount) ? seatNum + 1 : -1;
-            String leftGender = (leftSeatNum > 0 && leftSeatNum <= seatCount) ? reservedSeatsWithGender.get(leftSeatNum) : null;
-            String rightGender = (rightSeatNum > 0 && rightSeatNum <= seatCount) ? reservedSeatsWithGender.get(rightSeatNum) : null;
-            if (leftGender != null) allowedGender = leftGender;
-            if (rightGender != null) allowedGender = rightGender;
+
+            String leftGender = null;
+            if (leftSeatNum != -1 && reservedSeatsWithGender.containsKey(leftSeatNum)) {
+                leftGender = reservedSeatsWithGender.get(leftSeatNum);
+            }
+
+            String rightGender = null;
+            if (rightSeatNum != -1 && reservedSeatsWithGender.containsKey(rightSeatNum)) {
+                rightGender = reservedSeatsWithGender.get(rightSeatNum);
+            }
+
+            if (leftGender != null && rightGender != null) {
+                if (!leftGender.equals(rightGender)) {
+                    // Conflict: adjacent seats have different genders. This seat should not be selectable.
+                    JOptionPane.showMessageDialog(btn, "Bu koltuk farklı cinsiyetten kişilerin arasında olduğu için seçilemez.", "Koltuk Seçim Hatası", JOptionPane.ERROR_MESSAGE);
+                    return; // Exit the method, preventing seat selection
+                } else {
+                    // Both sides have the same gender, so only that gender is allowed.
+                    allowedGender = leftGender;
+                }
+            } else if (leftGender != null) {
+                // Only left seat is reserved, so only its gender is allowed.
+                allowedGender = leftGender;
+            } else if (rightGender != null) {
+                // Only right seat is reserved, so only its gender is allowed.
+                allowedGender = rightGender;
+            }
         }
+
         // Cinsiyet seçimi penceresi
         String[] options;
         if (allowedGender == null) {
             options = new String[]{"Kadın", "Erkek"};
         } else if (allowedGender.equals("Kadın")) {
             options = new String[]{"Kadın"};
-        } else {
+        } else { // allowedGender must be "Erkek"
             options = new String[]{"Erkek"};
         }
         int genderChoice = JOptionPane.showOptionDialog(

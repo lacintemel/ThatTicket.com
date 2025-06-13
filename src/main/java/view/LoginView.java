@@ -29,25 +29,19 @@ public class LoginView extends JPanel {
 
     public LoginView(AOOPProject aoopProject) {
         this.aoopProject = aoopProject;
-        setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(900, 520));
+        setLayout(new BorderLayout(0, 0));  // Remove gaps
 
-        // Sol Panel: Modern Login/Register
-        leftPanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Hafif degrade arka plan
-                GradientPaint gp = new GradientPaint(0, 0, new Color(245, 247, 250), getWidth(), getHeight(), new Color(230, 236, 245));
-                g2.setPaint(gp);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-            }
-        };
-        leftPanel.setPreferredSize(new Dimension(480, 520));
-        leftPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        // Initialize panels
+        leftPanel = new JPanel();
+        rightPanel = new TransportPanel();
 
+        // Set fixed size for left panel
+        leftPanel.setPreferredSize(new Dimension(500, 0));
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+        leftPanel.setBackground(Color.WHITE);
+        leftPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+
+        // Add components to left panel
         // Kart Paneli
         JPanel cardPanel = new JPanel(null) {
             @Override
@@ -130,9 +124,6 @@ public class LoginView extends JPanel {
         recoveryLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         bottomLinks.add(recoveryLabel);
         cardPanel.add(bottomLinks);
-
-        // Sağ Panel: TransportPanel
-        rightPanel = new TransportPanel();
 
         // Sign In butonu
         signInBtn = modernButton("Sign In", rightPanel.isBusMode() ? mainBlue : new Color(231, 76, 60));
@@ -225,101 +216,18 @@ public class LoginView extends JPanel {
         cardHolder.add(cardPanel);
         leftPanel.add(cardHolder, BorderLayout.CENTER);
         
-        // Add transport mode change listener
-        rightPanel.addTransportModeChangeListener(new TransportModeChangeListener() {
-            @Override
-            public void onTransportModeChanged(boolean isBusMode) {
-                if (!isAnimating) {
-                    animatePanelSwap();
-                }
-                // Update sign in button color based on transport mode
-                if (signInBtn != null) {
-                    ((RoundedButtonModern)signInBtn).setButtonColor(isBusMode ? mainBlue : new Color(231, 76, 60));
-                }
+        // Add transport mode change listener without panel swapping
+        rightPanel.addTransportModeChangeListener(isBusMode -> {
+            if (signInBtn != null) {
+                ((RoundedButtonModern)signInBtn).setButtonColor(isBusMode ? mainBlue : new Color(231, 76, 60));
             }
+            revalidate();
+            repaint();
         });
 
-        // Ana Panel
-        add(leftPanel, BorderLayout.WEST);
-        add(rightPanel, BorderLayout.EAST);
-    }
-
-    private void animatePanelSwap() {
-        isAnimating = true;
-        
-        // Get current positions
-        Point leftPos = leftPanel.getLocation();
-        Point rightPos = rightPanel.getLocation();
-        
-        // Create animation timer with smoother animation
-        Timer timer = new Timer(16, new ActionListener() {
-            private int step = 0;
-            private final int totalSteps = 40; // More steps for smoother animation
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (step < totalSteps) {
-                    // Calculate new positions using improved easing function
-                    double progress = (double) step / totalSteps;
-                    // Custom easing function for more natural motion
-                    double easedProgress;
-                    if (progress < 0.2) {
-                        // Start slow
-                        easedProgress = 5 * progress * progress;
-                    } else if (progress > 0.8) {
-                        // End slow
-                        easedProgress = 1 - 5 * (1 - progress) * (1 - progress);
-                    } else {
-                        // Middle fast
-                        easedProgress = 0.2 + 0.6 * (progress - 0.2) / 0.6;
-                    }
-                    
-                    int newLeftX = (int) (leftPos.x + (rightPos.x - leftPos.x) * easedProgress);
-                    int newRightX = (int) (rightPos.x + (leftPos.x - rightPos.x) * easedProgress);
-                    
-                    // Enhanced vertical movement with easing
-                    double verticalEase = Math.sin(progress * Math.PI);
-                    int verticalOffset = (int) (verticalEase * 15);
-                    
-                    // Add slight rotation effect
-                    double rotation = Math.sin(progress * Math.PI) * 5;
-                    
-                    // Apply transformations
-                    leftPanel.setLocation(newLeftX, leftPos.y + verticalOffset);
-                    rightPanel.setLocation(newRightX, rightPos.y - verticalOffset);
-                    
-                    // Apply subtle scaling effect
-                    double scale = 1.0 - Math.abs(Math.sin(progress * Math.PI)) * 0.05;
-                    leftPanel.setSize((int)(leftPanel.getWidth() * scale), leftPanel.getHeight());
-                    rightPanel.setSize((int)(rightPanel.getWidth() * scale), rightPanel.getHeight());
-                    
-                    step++;
-                    repaint();
-                } else {
-                    // Animation complete
-                    ((Timer) e.getSource()).stop();
-                    isAnimating = false;
-                    
-                    // Reset panel sizes
-                    leftPanel.setSize(leftPanel.getPreferredSize());
-                    rightPanel.setSize(rightPanel.getPreferredSize());
-                    
-                    // Update layout
-                    removeAll();
-                    if (rightPanel.isBusMode()) {
-                        add(leftPanel, BorderLayout.WEST);
-                        add(rightPanel, BorderLayout.EAST);
-                    } else {
-                        add(rightPanel, BorderLayout.WEST);
-                        add(leftPanel, BorderLayout.EAST);
-                    }
-                    revalidate();
-                    repaint();
-                }
-            }
-        });
-        
-        timer.start();
+        // Add panels in fixed positions
+        add(leftPanel, BorderLayout.WEST);      // Always on left
+        add(rightPanel, BorderLayout.CENTER);   // Always on right
     }
 
     public JPanel getLeftPanel() { return leftPanel; }

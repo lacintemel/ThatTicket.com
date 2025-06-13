@@ -29,6 +29,15 @@ public class TransportPanel extends JPanel {
     private final Color busColor = new Color(52, 152, 219); // Original blue
     private final Color planeColor = new Color(231, 76, 60); // Original red
 
+    // Add new fields for smoke animation
+    private List<SmokeParticle> particles;
+    private Timer smokeTimer;
+    private static final int NUM_PARTICLES = 30;
+
+    private List<Cloud> clouds = new ArrayList<>();
+    private Timer cloudTimer;
+    private static final int NUM_CLOUDS = 5;
+
     public TransportPanel() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(420, 520));
@@ -169,14 +178,128 @@ public class TransportPanel extends JPanel {
         // Start slogan rotation timer
         Timer timer = new Timer(5000, e -> rotateSlogan());
         timer.start();
+
+        // Initialize smoke particles
+        particles = new ArrayList<>();
+        for (int i = 0; i < NUM_PARTICLES; i++) {
+            particles.add(new SmokeParticle());
+        }
+
+        // Start smoke animation timer
+        smokeTimer = new Timer(50, e -> {
+            updateParticles();
+            repaint();
+        });
+        smokeTimer.start();
+
+        // Initialize clouds
+        for (int i = 0; i < NUM_CLOUDS; i++) {
+            clouds.add(new Cloud());
+        }
+
+        // Start cloud animation timer
+        cloudTimer = new Timer(50, e -> {
+            updateClouds();
+            repaint();
+        });
+        cloudTimer.start();
+    }
+
+    private void updateParticles() {
+        for (SmokeParticle particle : particles) {
+            particle.update();
+            if (particle.alpha <= 0) {
+                particle.reset();
+            }
+        }
+    }
+
+    private class Cloud {
+        float x, y;
+        float speed;
+        float size;
+        float alpha;
+
+        Cloud() {
+            reset();
+        }
+
+        void reset() {
+            size = (float) (Math.random() * 60) + 40;
+            x = -size;
+            y = (float) (Math.random() * (getHeight() / 3));
+            speed = (float) (Math.random() * 1.5) + 0.5f;
+            alpha = (float) (Math.random() * 0.3) + 0.2f;
+        }
+
+        void update() {
+            x += speed;
+            if (x > getWidth() + size) {
+                reset();
+            }
+        }
+
+        void draw(Graphics2D g2) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            g2.setColor(Color.WHITE);
+            
+            // Draw cloud shape
+            int[] xPoints = new int[8];
+            int[] yPoints = new int[8];
+            float centerX = x + size/2;
+            float centerY = y + size/2;
+            
+            for (int i = 0; i < 8; i++) {
+                double angle = Math.PI * 2 * i / 8;
+                xPoints[i] = (int)(centerX + Math.cos(angle) * size/2);
+                yPoints[i] = (int)(centerY + Math.sin(angle) * size/3);
+            }
+            
+            g2.fillPolygon(xPoints, yPoints, 8);
+            g2.fillOval((int)x, (int)y, (int)size, (int)(size/2));
+            g2.fillOval((int)(x + size/3), (int)(y - size/4), (int)(size/2), (int)(size/2));
+            g2.fillOval((int)(x + size/2), (int)(y), (int)(size/2), (int)(size/3));
+        }
+    }
+
+    private void updateClouds() {
+        for (Cloud cloud : clouds) {
+            cloud.update();
+        }
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g;
+        Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw background gradient
+        Color currentColor = isBusMode ? busColor : planeColor;
+        GradientPaint gradient = new GradientPaint(
+            0, 0, currentColor,
+            0, getHeight(), currentColor.darker()
+        );
+        g2.setPaint(gradient);
+        g2.fillRect(0, 0, getWidth(), getHeight());
+
+        // Get icon position
+        Point iconPosition = iconLabel.getLocation();
         
+        // Draw smoke particles only behind and slightly around the icon
+        for (SmokeParticle particle : particles) {
+            if (particle.y < iconPosition.y + iconLabel.getHeight()) {
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, particle.alpha));
+                g2.setColor(new Color(255, 255, 255, 100));
+                g2.fillOval(particle.x, particle.y, particle.size, particle.size);
+            }
+        }
+
+        // Draw clouds
+        for (Cloud cloud : clouds) {
+            cloud.draw(g2);
+        }
+
         // Draw animated circles
         g2.setColor(new Color(255, 255, 255, 5));
         for (int i = 0; i < 5; i++) {
@@ -202,6 +325,39 @@ public class TransportPanel extends JPanel {
         }
         for (int i = 0; i < getHeight(); i += 40) {
             g2.drawLine(0, i, getWidth(), i);
+        }
+
+        g2.dispose();
+    }
+
+    // Add SmokeParticle inner class
+    private class SmokeParticle {
+        int x, y, size;
+        float alpha;
+        double speed;
+
+        SmokeParticle() {
+            reset();
+        }
+
+        void reset() {
+            // Get icon position for particle starting point
+            Point iconPosition = iconLabel.getLocation();
+            int iconWidth = iconLabel.getWidth();
+            int iconHeight = iconLabel.getHeight();
+            
+            // Start particles from the bottom of the icon
+            size = (int) (Math.random() * 15) + 5;
+            x = iconPosition.x + (int)(Math.random() * iconWidth);
+            y = iconPosition.y + iconHeight;
+            alpha = 0.3f;
+            speed = Math.random() * 1.5 + 0.5;
+        }
+
+        void update() {
+            y -= speed;
+            alpha -= 0.008f;
+            size += 0.3;
         }
     }
 
@@ -231,4 +387,15 @@ public class TransportPanel extends JPanel {
             listener.onTransportModeChanged(isBusMode);
         }
     }
-} 
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        if (smokeTimer != null) {
+            smokeTimer.stop();
+        }
+        if (cloudTimer != null) {
+            cloudTimer.stop();
+        }
+    }
+}

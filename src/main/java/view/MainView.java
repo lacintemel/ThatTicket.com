@@ -920,4 +920,13 @@ public class MainView extends JPanel {
     public boolean isAdmin() {
         return isAdmin;
     }
+
+    // Yeni metod: Rezervasyonlar sekmesine geri dönmek için
+    public void showReservationsTab() {
+        // Rezervasyonları güncelleyerek içeriğin doğru olduğundan emin ol
+        updateReservationsPanel(customer, reservationsPanel);
+        // CardLayout kullanarak rezervasyonlar panelini göster
+        CardLayout cl = (CardLayout) mainPanel.getLayout();
+        cl.show(mainPanel, "Reservations");
+    }
 }
