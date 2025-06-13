@@ -210,7 +210,9 @@ public class AdminVoyagePanel extends JPanel {
         backButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12)); // Added vertical padding
         backButton.addActionListener(e -> {
             if (mainFrame instanceof AOOPProject) {
-                ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
+                MainView mainView = new MainView(admin, isBusMode, mainFrame);
+                mainView.setVisible(true);
+                ((AOOPProject) mainFrame).showMainView(mainView);
             }
         });
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10)); // Added horizontal and vertical gaps

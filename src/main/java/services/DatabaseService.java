@@ -193,15 +193,28 @@ public class DatabaseService {
     }
 
     // Kullanıcı sil
-    public static boolean deleteUser(int userId) {
-        String sql = "DELETE FROM users WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, userId);
-            pstmt.executeUpdate();
+    public static boolean deleteUser(String userId) {
+        try {
+            // Önce kullanıcının tüm rezervasyonlarını sil
+            String deleteReservationsSql = "DELETE FROM reservations WHERE user_id = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(deleteReservationsSql)) {
+                pstmt.setString(1, userId);
+                pstmt.executeUpdate();
+            }
             
-            // Cache'den kaldır
-            usersCache.values().removeIf(user -> user.getId().equals(userId));
-            return true;
+            // Sonra kullanıcıyı sil
+            String deleteUserSql = "DELETE FROM users WHERE id = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(deleteUserSql)) {
+                pstmt.setString(1, userId);
+                int result = pstmt.executeUpdate();
+                
+                if (result > 0) {
+                    // Cache'den kaldır
+                    usersCache.values().removeIf(user -> user.getId().equals(userId));
+                    return true;
+                }
+            }
+            return false;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -470,6 +483,8 @@ public class DatabaseService {
         public int seatNumber;
         public String gender;
         public String reservationDate;
+        public String userName;
+        public String userEmail;
         public ReservationInfo(int voyageId, int seatNumber, String gender, String reservationDate) {
             this.voyageId = voyageId;
             this.seatNumber = seatNumber;
@@ -490,6 +505,32 @@ public class DatabaseService {
                     rs.getString("gender"),
                     rs.getString("created_at")
                 ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return reservations;
+    }
+
+    // Tüm rezervasyonları getir (Admin için)
+    public static java.util.List<ReservationInfo> getAllReservations() {
+        java.util.List<ReservationInfo> reservations = new java.util.ArrayList<>();
+        String sql = "SELECT r.voyage_id, r.seat_number, r.gender, r.created_at, u.name as user_name, u.email as user_email " +
+                    "FROM reservations r " +
+                    "JOIN users u ON r.user_id = u.id " +
+                    "ORDER BY r.created_at DESC";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                ReservationInfo info = new ReservationInfo(
+                    rs.getInt("voyage_id"),
+                    rs.getInt("seat_number"),
+                    rs.getString("gender"),
+                    rs.getString("created_at")
+                );
+                info.userName = rs.getString("user_name");
+                info.userEmail = rs.getString("user_email");
+                reservations.add(info);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -612,12 +653,75 @@ public class DatabaseService {
             ResultSet rs = connection.createStatement().executeQuery(query);
             if (rs.next()) {
                 int maxId = rs.getInt("max_id");
-                return maxId + 1;
+                return maxId + 1; // If no users exist yet, start with ID 1
             }
             return 1; // If no users exist yet, start with ID 1
         } catch (SQLException e) {
             System.err.println("Error getting next user ID: " + e.getMessage());
             return 1; // Default to 1 if there's an error
         }
+    }
+
+    public static boolean deleteReservationsByUserId(int userId) {
+        try {
+            String sql = "DELETE FROM reservations WHERE user_id = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, userId);
+                int affectedRows = pstmt.executeUpdate();
+                return affectedRows > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static List<Object[]> getReservationsByUserId(int userId) {
+        List<Object[]> reservations = new ArrayList<>();
+        try {
+            String sql = "SELECT id, seat_number, gender, created_at FROM reservations WHERE user_id = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, userId);
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    Object[] reservation = new Object[4];
+                    reservation[0] = rs.getInt("id");
+                    reservation[1] = rs.getInt("seat_number");
+                    reservation[2] = rs.getString("gender");
+                    reservation[3] = rs.getString("created_at");
+                    reservations.add(reservation);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return reservations;
+    }
+
+    public static Voyage getVoyageById(int voyageId) {
+        try {
+            String sql = "SELECT * FROM voyages WHERE id = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, voyageId);
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    return new Voyage(
+                        rs.getInt("id"),
+                        rs.getString("type"),
+                        rs.getString("firm"),
+                        rs.getString("origin"),
+                        rs.getString("destination"),
+                        rs.getString("start_time"),
+                        rs.getString("arrival_time"),
+                        rs.getInt("seat_count"),
+                        rs.getDouble("price"),
+                        rs.getString("seat_arrangement")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

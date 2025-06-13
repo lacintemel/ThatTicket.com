@@ -3,9 +3,13 @@ import javax.swing.*;
 import java.awt.*;
 import models.Customer;
 import models.Voyage;
+import models.User;
 import services.DatabaseService;
 import services.Admin;
+import com.mycompany.aoopproject.AOOPProject;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
     // TripCardPanel: Modern card for a trip
     public class TripCardPanel extends JPanel {
@@ -85,7 +89,7 @@ import java.net.URL;
             leftTop.setOpaque(false);
             leftTop.setLayout(new BoxLayout(leftTop, BoxLayout.X_AXIS));
             // Admin ikonları
-            if (customer != null && "Admin".equalsIgnoreCase(customer.getUser_type())) {
+            if (mainView.isAdmin()) {
                 leftTop.add(createAdminIconsPanel());
                 leftTop.add(Box.createHorizontalStrut(4));
             }
@@ -103,17 +107,11 @@ import java.net.URL;
             priceLabel = createPriceLabel(mainColor);
             topRow.add(priceLabel, BorderLayout.EAST);
 
-
-
             JPanel middleRow = new JPanel(new BorderLayout());
             middleRow.setOpaque(false);
             // Sağda boş koltuk kutusu
             availableSeats = trip.getSeatCount() - DatabaseService.getReservedSeats(trip.getVoyageId()).size();
             middleRow.add(createAvailablePanel(), BorderLayout.WEST);
-
-            
-
-
 
             // --- ALT SATIR ---
             JPanel bottomRow = new JPanel(new BorderLayout());
@@ -159,22 +157,29 @@ import java.net.URL;
             editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             editButton.setToolTipText("Düzenle");
             editButton.addActionListener(e -> {
-                System.out.println("Edit button clicked");
-                if (customer != null && "Admin".equalsIgnoreCase(customer.getUser_type())) {
-                    System.out.println("User is admin, proceeding with edit");
+                System.out.println("\n=== Edit Button Clicked ===");
+                if (mainView.isAdmin()) {
+                    System.out.println("4. Admin check passed");
                     JFrame frame = mainView.getMainFrame();
+                    System.out.println("5. Frame type: " + (frame != null ? frame.getClass().getName() : "null"));
+                    
                     if (frame instanceof com.mycompany.aoopproject.AOOPProject) {
-                        System.out.println("Creating EditVoyagePanel");
+                        System.out.println("6. Frame is AOOPProject");
                         com.mycompany.aoopproject.AOOPProject aoopFrame = (com.mycompany.aoopproject.AOOPProject) frame;
-                        EditVoyagePanel editPanel = new EditVoyagePanel(customer, trip, aoopFrame);
-                        System.out.println("Showing EditVoyagePanel");
+                        User currentUser = mainView.getUser();
+                        System.out.println("7. Current user type: " + (currentUser != null ? currentUser.getClass().getName() : "null"));
+                        
+                        System.out.println("8. Creating EditVoyagePanel");
+                        EditVoyagePanel editPanel = new EditVoyagePanel(currentUser, trip, aoopFrame);
+                        System.out.println("9. Showing EditVoyagePanel");
                         aoopFrame.showMainView(editPanel);
                     } else {
-                        System.out.println("MainFrame is not AOOPProject");
+                        System.out.println("6. Error: Frame is not AOOPProject");
                     }
                 } else {
-                    System.out.println("User is not admin");
+                    System.out.println("4. Error: User is not admin");
                 }
+                System.out.println("=== End Edit Button Click ===\n");
             });
             deleteButton = new JButton();
             try {
@@ -197,10 +202,6 @@ import java.net.URL;
                         parent.remove(this);
                         parent.revalidate();
                         parent.repaint();
-                    }
-                    Admin adminObj = Admin.getAdminByEmail(customer.getEmail());
-                    if (adminObj != null && mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
-                        ((com.mycompany.aoopproject.AOOPProject) mainFrame).showAdminPanel(adminObj, trip.getType().equalsIgnoreCase("Bus"));
                     }
                 }
             });
@@ -376,6 +377,14 @@ import java.net.URL;
             });
             panel.add(buyButton);
             return panel;
+        }
+
+        public void setAdminControlsVisible(boolean visible) {
+            if (editButton != null && deleteButton != null) {
+                editButton.setVisible(visible);
+                deleteButton.setVisible(visible);
+                editButton.getParent().setVisible(visible);
+            }
         }
     }
         // Tam yuvarlak köşe için özel border

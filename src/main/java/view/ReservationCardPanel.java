@@ -2,24 +2,35 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import models.Customer;
 import models.Voyage;
+import models.User;
 import services.DatabaseService;
+import view.ReservationsPanel;
 
 public class ReservationCardPanel extends JPanel {
     private final Customer customer;
     private final Voyage trip;
     private final int reservedSeatNumber;
     private final String reservedGender;
+    private final String transportType;
+    private final ReservationsPanel reservationsPanel;
+    private final String adminEmail;
     private final String reservationDate;
     private JFrame mainFrame;
     private MainView mainView;
+    private JLabel userInfoLabel;
 
-    public ReservationCardPanel(Voyage trip, Customer customer, int reservedSeatNumber, String reservedGender, MainView mainView, String reservationDate) {
+    public ReservationCardPanel(Customer customer, Voyage trip, int reservedSeatNumber, String reservedGender, String transportType, ReservationsPanel reservationsPanel, String adminEmail, MainView mainView, String reservationDate) {
         this.customer = customer;
         this.trip = trip;
         this.reservedSeatNumber = reservedSeatNumber;
         this.reservedGender = reservedGender;
+        this.transportType = transportType;
+        this.reservationsPanel = reservationsPanel;
+        this.adminEmail = adminEmail;
         this.mainView = mainView;
         this.reservationDate = reservationDate;
         this.mainFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
@@ -96,11 +107,25 @@ public class ReservationCardPanel extends JPanel {
         card.add(mainPanel, BorderLayout.CENTER);
         add(card, BorderLayout.CENTER);
 
-        // Rezervasyon tarihi etiketi
+        // User info and date panel
+        JPanel bottomInfoPanel = new JPanel(new BorderLayout());
+        bottomInfoPanel.setOpaque(false);
+        
+        // User info label (left side)
+        if (userInfoLabel == null) {
+            userInfoLabel = new JLabel();
+            userInfoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            userInfoLabel.setForeground(new Color(128, 128, 128));
+        }
+        bottomInfoPanel.add(userInfoLabel, BorderLayout.WEST);
+
+        // Date label (right side)
         JLabel dateLabel = new JLabel("Alınma Tarihi: " + reservationDate);
         dateLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         dateLabel.setForeground(new Color(120, 120, 120));
-        add(dateLabel, BorderLayout.SOUTH);
+        bottomInfoPanel.add(dateLabel, BorderLayout.EAST);
+
+        add(bottomInfoPanel, BorderLayout.SOUTH);
 
         // Kart tıklanınca ana panelde koltuk seçimi paneli göster
         this.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -252,20 +277,68 @@ public class ReservationCardPanel extends JPanel {
         cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         cancelButton.setPreferredSize(new Dimension(160, 38));
         cancelButton.addActionListener(e -> {
-            int result = JOptionPane.showConfirmDialog(this, "Bu rezervasyonu iptal etmek istediğinize emin misiniz?", "Onay", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (result == JOptionPane.YES_OPTION) {
-                customer.cancelReservation(trip.getVoyageId(), reservedSeatNumber, reservedGender);
-                DatabaseService.deleteReservation(Integer.parseInt(customer.getId()), trip.getVoyageId(), reservedSeatNumber);
-                Container parent = this.getParent();
-                if (parent != null) {
-                    parent.remove(this);
-                    parent.revalidate();
-                    parent.repaint();
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Bu rezervasyonu iptal etmek istediğinizden emin misiniz?",
+                "Rezervasyon İptali",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    // Admin için kullanıcı ID'sini email ile bul
+                    User currentUser = services.DatabaseService.getUserByEmail(adminEmail);
+                    if (currentUser != null) {
+                        boolean success = services.DatabaseService.deleteReservation(
+                            Integer.parseInt(currentUser.getId()),
+                            trip.getVoyageId(),
+                            reservedSeatNumber
+                        );
+                        
+                        if (success) {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                "Rezervasyon başarıyla iptal edildi.",
+                                "Başarılı",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                            if (reservationsPanel != null) {
+                                reservationsPanel.refreshReservations();
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                "Rezervasyon iptal edilirken bir hata oluştu.",
+                                "Hata",
+                                JOptionPane.ERROR_MESSAGE
+                            );
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            "Kullanıcı bilgisi bulunamadı.",
+                            "Hata",
+                            JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Rezervasyon iptal edilirken bir hata oluştu: " + ex.getMessage(),
+                        "Hata",
+                        JOptionPane.ERROR_MESSAGE
+                    );
                 }
-                JOptionPane.showMessageDialog(this, "Rezervasyonunuz iptal edildi.", "Bilgi", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         panel.add(cancelButton);
         return panel;
+    }
+
+    public void setUserInfo(String userName, String userEmail) {
+        if (userInfoLabel != null) {
+            userInfoLabel.setText("Kullanıcı: " + userName + " (" + userEmail + ")");
+        }
     }
 } 

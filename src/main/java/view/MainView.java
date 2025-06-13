@@ -15,6 +15,7 @@ import java.util.Date;
 import models.User;
 
 public class MainView extends JPanel {
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     private JList<String> busList;
     private JPanel mainPanel;
     private JPanel tripsPanel;
@@ -32,10 +33,12 @@ public class MainView extends JPanel {
     private JLabel noVoyagesLabel;
     private boolean isAdmin;
     private JPanel notificationsPanel;
+    private User user;  // Store the original user object
 
     public MainView(User user, boolean isBusMode, JFrame mainFrame) {
-        this.customer = (user instanceof Customer) ? (Customer) user : null; // Set customer only if it's a Customer instance
-        this.isAdmin = (user instanceof Admin);
+        this.user = user;  // Store the original user
+        this.customer = (user instanceof Customer) ? (Customer) user : null;
+        this.isAdmin = (user instanceof Admin) || (user instanceof Customer && "Admin".equalsIgnoreCase(((Customer) user).getUser_type()));
         this.isBusMode = isBusMode;
         this.mainFrame = mainFrame;
         setLayout(new BorderLayout());
@@ -44,7 +47,7 @@ public class MainView extends JPanel {
         } else {
             allTrips = new ArrayList<>(DatabaseService.getAllFlightVoyages());
         }
-
+        
         // Sort voyages by date
         allTrips.sort((v1, v2) -> {
             try {
@@ -70,6 +73,10 @@ public class MainView extends JPanel {
         headerPanel.setOpaque(false);
         headerPanel.setBackground(mainBg);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(16, 24, 16, 24));
+        
+        // Left panel for buttons
+        JPanel leftButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftButtonsPanel.setOpaque(false);
         
         // Sign out butonu
         JButton signOutBtn = new JButton("Sign Out") {
@@ -100,7 +107,74 @@ public class MainView extends JPanel {
                 aoopProjectFrame.showLogin();
             }
         });
-        headerPanel.add(signOutBtn, BorderLayout.WEST);
+        leftButtonsPanel.add(signOutBtn);
+
+        // Delete Account butonu
+        JButton deleteAccountBtn = new JButton("Delete Account") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(231, 76, 60).darker(),
+                    getWidth(), getHeight(), new Color(231, 76, 60)
+                );
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        deleteAccountBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        deleteAccountBtn.setForeground(Color.WHITE);
+        deleteAccountBtn.setBorderPainted(false);
+        deleteAccountBtn.setFocusPainted(false);
+        deleteAccountBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        deleteAccountBtn.setPreferredSize(new Dimension(140, 38));
+        deleteAccountBtn.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        deleteAccountBtn.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!",
+                "Hesap Silme Onayı",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    String userId;
+                    if (isAdmin) {
+                        // Admin için kullanıcı ID'sini email ile bul
+                        User adminUser = services.DatabaseService.getUserByEmail(user.getEmail());
+                        if (adminUser != null) {
+                            userId = adminUser.getId();
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Admin kullanıcısı bulunamadı!", "Hata", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                    } else {
+                        userId = customer.getId();
+                    }
+                    
+                    // Önce rezervasyonları sil
+                    services.DatabaseService.deleteReservationsByUserId(Integer.parseInt(userId));
+                    
+                    // Sonra kullanıcıyı sil
+                    services.DatabaseService.deleteUser(userId);
+                    
+                    JOptionPane.showMessageDialog(this, "Hesabınız başarıyla silindi!", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
+                    if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
+                        ((com.mycompany.aoopproject.AOOPProject) mainFrame).showLogin();
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Hesap silinirken bir hata oluştu: " + ex.getMessage(), "Hata", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        leftButtonsPanel.add(deleteAccountBtn);
+        
+        headerPanel.add(leftButtonsPanel, BorderLayout.WEST);
 
         // Başlık
         dynamicTitle = new JLabel(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri", SwingConstants.CENTER);
@@ -137,7 +211,7 @@ public class MainView extends JPanel {
                 SwingWorker<Void, Void> worker = new SwingWorker<>() {
                     @Override
                     protected Void doInBackground() {
-                        frame.showMainView(new MainView(customer, !isBusMode, frame));
+                        frame.showMainView(new MainView(customer != null ? customer : user, !isBusMode, frame));
                         return null;
                     }
                     @Override
@@ -231,6 +305,9 @@ public class MainView extends JPanel {
         notifyButton.setFocusPainted(false);
         notifyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         notifyButton.setPreferredSize(new Dimension(120, 38));
+        
+        // Only show notify button for regular customers
+        notifyButton.setVisible(!isAdmin && customer != null);
         
         notifyButton.addActionListener(e -> {
             String selectedOrigin = (String) originCombo.getSelectedItem();
@@ -458,15 +535,16 @@ public class MainView extends JPanel {
         btnNotifications.setPreferredSize(new Dimension(140, 35));
 
         // Admin için "Yeni Sefer Ekle" butonu
+        JButton addVoyageBtn = null;
         if (isAdmin) {
-            JButton addVoyageBtn = new JButton("Yeni Sefer Ekle") {
+            addVoyageBtn = new JButton("Yeni Sefer Ekle") {
                 @Override
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     // Drop shadow
                     g2.setColor(new Color(0,0,0,30));
-                     g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
                     // Gradient by mode
                     Color mainColor = isBusMode ? new Color(52, 152, 219) : new Color(220, 53, 69);
                     GradientPaint gp = new GradientPaint(0, 0, mainColor.darker(), getWidth(), getHeight(), mainColor);
@@ -613,6 +691,7 @@ public class MainView extends JPanel {
         cl.show(mainPanel, name);
         if (name.equals("TRIPS")) {
             dynamicTitle.setText(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri");
+            updateTripList();
         } else if (name.equals("RESERVATIONS")) {
             dynamicTitle.setText("Rezervasyonlar");
             updateReservationsPanel(this.customer, reservationsPanel);
@@ -620,6 +699,7 @@ public class MainView extends JPanel {
             dynamicTitle.setText("Bildirimler");
             updateNotifications();
         }
+        
         // Update tabbar button colors
         revalidate();
         repaint();
@@ -630,7 +710,7 @@ public class MainView extends JPanel {
         System.out.println("Panel güncelleniyor...");
         reservationsCardListPanel.removeAll();
         
-        if (customer == null) {
+        if (customer == null && !isAdmin) {
             JLabel emptyLabel = new JLabel("Rezervasyonlar sadece müşteri hesapları için geçerlidir.", SwingConstants.CENTER);
             emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
             reservationsCardListPanel.add(emptyLabel);
@@ -639,7 +719,15 @@ public class MainView extends JPanel {
             return;
         }
 
-        java.util.List<services.DatabaseService.ReservationInfo> reservations = services.DatabaseService.getReservationsForUser(Integer.parseInt(customer.getId()));
+        java.util.List<services.DatabaseService.ReservationInfo> reservations;
+        if (isAdmin) {
+            // Admin için tüm rezervasyonları getir
+            reservations = services.DatabaseService.getAllReservations();
+        } else {
+            // Normal kullanıcı için kendi rezervasyonlarını getir
+            reservations = services.DatabaseService.getReservationsForUser(Integer.parseInt(customer.getId()));
+        }
+
         System.out.println("Veritabanından rezervasyon sayısı: " + reservations.size());
         if (reservations.isEmpty()) {
             JLabel emptyLabel = new JLabel("Rezervasyonunuz bulunmamaktadır.", SwingConstants.CENTER);
@@ -650,7 +738,21 @@ public class MainView extends JPanel {
                 Voyage voyage = Voyage.getVoyageHashMap().get(res.voyageId);
                 if (voyage != null) {
                     System.out.println("Voyage: " + voyage.getVoyageId() + ", Seat: " + res.seatNumber);
-                    ReservationCardPanel panel = new ReservationCardPanel(voyage, customer, res.seatNumber, res.gender, this, res.reservationDate);
+                    ReservationCardPanel panel = new ReservationCardPanel(
+                        customer,
+                        voyage,
+                        res.seatNumber,
+                        res.gender,
+                        voyage.getType(),
+                        new ReservationsPanel(customer, user.getEmail(), isAdmin),
+                        user.getEmail(),
+                        this,
+                        res.reservationDate
+                    );
+                    if (isAdmin) {
+                        // Admin için kullanıcı bilgilerini ekle
+                        panel.setUserInfo(res.userName, res.userEmail);
+                    }
                     reservationsCardListPanel.add(panel);
                     reservationsCardListPanel.add(Box.createVerticalStrut(10));
                 }
@@ -784,5 +886,17 @@ public class MainView extends JPanel {
 
         notificationsPanel.revalidate();
         notificationsPanel.repaint();
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public boolean isBusMode() {
+        return isBusMode;
+    }
+
+    public boolean isAdmin() {
+        return isAdmin;
     }
 }

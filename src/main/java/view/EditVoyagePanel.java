@@ -2,8 +2,8 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
-import models.Customer;
 import models.Voyage;
+import models.User;
 import services.DatabaseService;
 import com.mycompany.aoopproject.AOOPProject;
 import com.toedter.calendar.JDateChooser;
@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class EditVoyagePanel extends JPanel {
-    private final Customer customer;
+    private final User user;
     private final Voyage voyage;
     private final JFrame mainFrame;
     private JTextField firmField;
@@ -25,8 +25,8 @@ public class EditVoyagePanel extends JPanel {
     private JTextField seatCountField;
     private JComboBox<String> seatArrangementCombo;
 
-    public EditVoyagePanel(Customer customer, Voyage voyage, JFrame mainFrame) {
-        this.customer = customer;
+    public EditVoyagePanel(User user, Voyage voyage, JFrame mainFrame) {
+        this.user = user;
         this.voyage = voyage;
         this.mainFrame = mainFrame;
         
@@ -63,7 +63,7 @@ public class EditVoyagePanel extends JPanel {
         backButton.setPreferredSize(new Dimension(170, 36));
         backButton.addActionListener(e -> {
             if (mainFrame instanceof AOOPProject) {
-                ((AOOPProject) mainFrame).showMainView(new MainView(customer, voyage.getType().equalsIgnoreCase("Bus"), (AOOPProject)mainFrame));
+                ((AOOPProject) mainFrame).showMainView(new MainView(user, voyage.getType().equalsIgnoreCase("Bus"), (AOOPProject)mainFrame));
             }
         });
 
@@ -186,7 +186,7 @@ public class EditVoyagePanel extends JPanel {
                 
                 JOptionPane.showMessageDialog(this, "Trip updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 if (mainFrame instanceof AOOPProject) {
-                   ((AOOPProject) mainFrame).showMainView(new MainView(customer, voyage.getType().equalsIgnoreCase("Bus"), (AOOPProject)mainFrame));
+                   ((AOOPProject) mainFrame).showMainView(new MainView(user, voyage.getType().equalsIgnoreCase("Bus"), (AOOPProject)mainFrame));
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();

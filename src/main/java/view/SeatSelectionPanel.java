@@ -156,8 +156,12 @@ public class SeatSelectionPanel extends JPanel {
         reserveButton.setPreferredSize(new Dimension(150, 38));
         reserveButton.setEnabled(false);
         reserveButton.addActionListener(e -> {
-            // Admin ise hata ver
-            if (customer != null && "Admin".equalsIgnoreCase(customer.getUser_type())) {
+            // Admin ise veya müşteri null ise hata ver
+            if (customer == null) {
+                JOptionPane.showMessageDialog(this, "Rezervasyon yapabilmek için giriş yapmalısınız!", "Hata", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if ("Admin".equalsIgnoreCase(customer.getUser_type())) {
                 JOptionPane.showMessageDialog(this, "Admin kullanıcı rezervasyon yapamaz!", "Hata", JOptionPane.ERROR_MESSAGE);
                 return;
             }
