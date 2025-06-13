@@ -2,13 +2,9 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import models.Customer;
 import models.Voyage;
 import models.User;
-import services.DatabaseService;
-import view.ReservationsPanel;
 
 public class ReservationCardPanel extends JPanel {
     private final Customer customer;

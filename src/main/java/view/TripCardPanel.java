@@ -5,11 +5,7 @@ import models.Customer;
 import models.Voyage;
 import models.User;
 import services.DatabaseService;
-import services.Admin;
-import com.mycompany.aoopproject.AOOPProject;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
     // TripCardPanel: Modern card for a trip
     public class TripCardPanel extends JPanel {

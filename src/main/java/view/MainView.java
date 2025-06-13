@@ -13,6 +13,11 @@ import com.toedter.calendar.JDateChooser;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import models.User;
+import java.net.URL;
+import javax.imageio.ImageIO;
+import java.awt.Image;
+import java.io.IOException;
+import java.net.MalformedURLException;
 
 public class MainView extends JPanel {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -78,29 +83,45 @@ public class MainView extends JPanel {
         JPanel leftButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         leftButtonsPanel.setOpaque(false);
         
+        // User type label
+        JLabel userTypeLabel = new JLabel(isAdmin ? "👑 Admin" : "👤 Müşteri");
+        userTypeLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        userTypeLabel.setForeground(new Color(70, 70, 70));
+        leftButtonsPanel.add(userTypeLabel);
+        
         // Sign out butonu
-        JButton signOutBtn = new JButton("Sign Out") {
+        JButton signOutBtn = new JButton() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint gp = new GradientPaint(
-                    0, 0, new Color(231, 76, 60).darker(),
-                    getWidth(), getHeight(), new Color(231, 76, 60)
-                );
-                g2.setPaint(gp);
+                g2.setColor(new Color(231, 76, 60)); // Kırmızı arka plan
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
                 super.paintComponent(g2);
                 g2.dispose();
             }
         };
-        signOutBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        signOutBtn.setForeground(Color.WHITE);
+
+        try {
+            URL iconUrl = new URL("https://img.icons8.com/ios/50/FFFFFF/exit--v1.png");
+            Image img = ImageIO.read(iconUrl);
+            Image scaledImg = img.getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+            signOutBtn.setIcon(new ImageIcon(scaledImg));
+        } catch (MalformedURLException e) {
+            System.err.println("Invalid URL for exit icon: " + e.getMessage());
+            signOutBtn.setText("🚪"); // URL hatalıysa varsayılan metni göster
+        } catch (IOException ex) {
+            System.err.println("Exit icon could not be loaded from URL: " + ex.getMessage());
+            signOutBtn.setText("🚪"); // Yüklenemezse varsayılan metni göster
+        }
+
+        signOutBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        signOutBtn.setForeground(Color.WHITE); // Beyaz ikon
         signOutBtn.setBorderPainted(false);
         signOutBtn.setFocusPainted(false);
         signOutBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        signOutBtn.setPreferredSize(new Dimension(120, 38));
-        signOutBtn.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        signOutBtn.setPreferredSize(new Dimension(40, 38));
+        signOutBtn.setToolTipText("Çıkış Yap");
         signOutBtn.addActionListener(e -> {
             if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
                 com.mycompany.aoopproject.AOOPProject aoopProjectFrame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
