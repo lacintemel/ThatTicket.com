@@ -32,9 +32,9 @@ public class DatabaseService {
             createTables();
             loadUsersIntoCache();
             loadVoyagesIntoCache();
-            System.out.println("Veritabanı başarıyla başlatıldı!");
+            // System.out.println("Veritabanı başarıyla başlatıldı!");
         } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to initialize database: " + e.getMessage());
         }
     }
 
@@ -81,7 +81,7 @@ public class DatabaseService {
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 "FOREIGN KEY (user_id) REFERENCES users(id))");
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to create tables: " + e.getMessage());
         }
     }
 
@@ -113,7 +113,7 @@ public class DatabaseService {
                 usersCache.put(user.getEmail(), user);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to load users into cache: " + e.getMessage());
         }
     }
 
@@ -149,7 +149,7 @@ public class DatabaseService {
                 );
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to load voyages into cache: " + e.getMessage());
         }
     }
 
@@ -167,8 +167,7 @@ public class DatabaseService {
             usersCache.put(user.getEmail(), user);
             return true;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException("Failed to add user: " + e.getMessage());
         }
     }
 
@@ -187,8 +186,7 @@ public class DatabaseService {
             usersCache.put(user.getEmail(), user);
             return true;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException("Failed to update user: " + e.getMessage());
         }
     }
 
@@ -216,8 +214,7 @@ public class DatabaseService {
             }
             return false;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException("Failed to delete user: " + e.getMessage());
         }
     }
 
@@ -258,7 +255,7 @@ public class DatabaseService {
                 return user;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get user by email: " + e.getMessage());
         }
         return null;
     }
@@ -280,7 +277,6 @@ public class DatabaseService {
     // Voyage ekleme fonksiyonu
     public static int addVoyage(String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement) {
         System.out.println("DatabaseService.addVoyage çağrıldı!");
-        System.out.println("Seat Arrangement: " + seatArrangement);
         String sql = "INSERT INTO voyages (type, firm, origin, destination, start_time, arrival_time, price, seat_arrangement, seat_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, type);
@@ -303,13 +299,14 @@ public class DatabaseService {
             }
             return -1;
         } catch (SQLException e) {
-            e.printStackTrace();
-            System.out.println("SQL Hatası: " + e.getMessage());
-            return -1;
+            throw new RuntimeException("Failed to add voyage: " + e.getMessage());
         }
     }
 
     public static java.util.List<BusTrip> getAllBusVoyages() {
+        // Önce voyage cache'ini temizle
+        Voyage.getVoyageHashMap().clear();
+        
         java.util.List<BusTrip> busTrips = new java.util.ArrayList<>();
         String sql = "SELECT * FROM voyages WHERE type = 'Bus'";
         try (Statement stmt = connection.createStatement();
@@ -327,9 +324,11 @@ public class DatabaseService {
                     rs.getString("seat_arrangement")
                 );
                 busTrips.add(trip);
+                // Voyage'ı hashmap'e ekle
+                Voyage.getVoyageHashMap().put(trip.getVoyageId(), trip);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get all bus voyages: " + e.getMessage());
         }
         return busTrips;
     }
@@ -341,13 +340,11 @@ public class DatabaseService {
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, voyageId);
             ResultSet rs = pstmt.executeQuery();
-            System.out.println("Checking reservations for voyageId: " + voyageId);
             while (rs.next()) {
                 reserved.add(rs.getInt("seat_number"));
             }
-            System.out.println("Reserved seats: " + reserved);
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get reserved seats: " + e.getMessage());
         }
         return reserved;
     }
@@ -363,8 +360,7 @@ public class DatabaseService {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException("Failed to add reservation: " + e.getMessage());
         }
     }
 
@@ -375,11 +371,14 @@ public class DatabaseService {
             pstmt.setInt(1, voyageId);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to delete voyage: " + e.getMessage());
         }
     }
 
     public static java.util.List<FlightTrip> getAllFlightVoyages() {
+        // Önce voyage cache'ini temizle
+        Voyage.getVoyageHashMap().clear();
+        
         java.util.List<FlightTrip> flightTrips = new java.util.ArrayList<>();
         String sql = "SELECT * FROM voyages WHERE type = 'Flight'";
         try (Statement stmt = connection.createStatement();
@@ -397,9 +396,11 @@ public class DatabaseService {
                     rs.getString("seat_arrangement")
                 );
                 flightTrips.add(trip);
+                // Voyage'ı hashmap'e ekle
+                Voyage.getVoyageHashMap().put(trip.getVoyageId(), trip);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get all flight voyages: " + e.getMessage());
         }
         return flightTrips;
     }
@@ -421,7 +422,7 @@ public class DatabaseService {
                 pstmt.executeUpdate();
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to add voyage to database: " + e.getMessage());
         }
     }
 
@@ -443,7 +444,7 @@ public class DatabaseService {
                 pstmt.executeUpdate();
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to update voyage in database: " + e.getMessage());
         }
     }
 
@@ -457,23 +458,72 @@ public class DatabaseService {
                 reserved.put(rs.getInt("seat_number"), rs.getString("gender"));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get reserved seats with gender: " + e.getMessage());
         }
         return reserved;
     }
 
     // Kullanıcı, sefer ve koltuk numarasına göre rezervasyon sil
     public static boolean deleteReservation(int userId, int voyageId, int seatNumber) {
+        // System.out.println("Rezervasyon silme işlemi başladı:");
+        // System.out.println("User ID: " + userId);
+        // System.out.println("Voyage ID: " + voyageId);
+        // System.out.println("Seat Number: " + seatNumber);
+
+        // Önce rezervasyonun detaylarını kontrol et
+        String checkDetailsSql = "SELECT * FROM reservations WHERE user_id = ? OR voyage_id = ? OR seat_number = ?";
+        try (PreparedStatement checkDetailsStmt = connection.prepareStatement(checkDetailsSql)) {
+            checkDetailsStmt.setInt(1, userId);
+            checkDetailsStmt.setInt(2, voyageId);
+            checkDetailsStmt.setInt(3, seatNumber);
+            ResultSet rs = checkDetailsStmt.executeQuery();
+            
+            // System.out.println("\nMevcut rezervasyonlar:");
+            boolean foundAny = false;
+            while (rs.next()) {
+                foundAny = true;
+                // System.out.println("Rezervasyon bulundu:");
+                // System.out.println("User ID: " + rs.getInt("user_id"));
+                // System.out.println("Voyage ID: " + rs.getInt("voyage_id"));
+                // System.out.println("Seat Number: " + rs.getInt("seat_number"));
+                // System.out.println("Gender: " + rs.getString("gender"));
+                // System.out.println("Created At: " + rs.getString("created_at"));
+                // System.out.println("---");
+            }
+            if (!foundAny) {
+                // System.out.println("Hiç rezervasyon bulunamadı!");
+            }
+        } catch (SQLException e) {
+            // System.err.println("Rezervasyon detayları kontrol edilirken hata: " + e.getMessage());
+        }
+
         String sql = "DELETE FROM reservations WHERE user_id = ? AND voyage_id = ? AND seat_number = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
             pstmt.setInt(2, voyageId);
             pstmt.setInt(3, seatNumber);
+            
+            // Önce rezervasyonun var olup olmadığını kontrol et
+            String checkSql = "SELECT COUNT(*) FROM reservations WHERE user_id = ? AND voyage_id = ? AND seat_number = ?";
+            try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
+                checkStmt.setInt(1, userId);
+                checkStmt.setInt(2, voyageId);
+                checkStmt.setInt(3, seatNumber);
+                ResultSet rs = checkStmt.executeQuery();
+                if (rs.next() && rs.getInt(1) == 0) {
+                    // System.out.println("Rezervasyon bulunamadı!");
+                    return false;
+                }
+            }
+
             int affected = pstmt.executeUpdate();
+            // System.out.println("Silinen kayıt sayısı: " + affected);
             return affected > 0;
+     
         } catch (SQLException e) {
+            // System.err.println("Rezervasyon silme hatası: " + e.getMessage());
             e.printStackTrace();
-            return false;
+            throw new RuntimeException("Rezervasyon silinirken bir hata oluştu: " + e.getMessage());
         }
     }
 
@@ -507,7 +557,7 @@ public class DatabaseService {
                 ));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get reservations for user: " + e.getMessage());
         }
         return reservations;
     }
@@ -533,7 +583,7 @@ public class DatabaseService {
                 reservations.add(info);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get all reservations: " + e.getMessage());
         }
         return reservations;
     }
@@ -546,13 +596,12 @@ public class DatabaseService {
             pstmt.setString(2, notification);
             int affected = pstmt.executeUpdate();
             if (affected > 0) {
-                System.out.println("Bildirim başarıyla eklendi - User ID: " + userId);
+                // System.out.println("Bildirim başarıyla eklendi - User ID: " + userId);
             } else {
-                System.out.println("Bildirim eklenemedi!");
+                // System.out.println("Bildirim eklenemedi!");
             }
         } catch (SQLException e) {
-            System.out.println("Bildirim eklenirken hata: " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException("Failed to add notification: " + e.getMessage());
         }
     }
 
@@ -571,8 +620,7 @@ public class DatabaseService {
                 notifications.add(notificationData);
             }
         } catch (SQLException e) {
-            System.out.println("Bildirimler getirilirken hata: " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get notifications for user: " + e.getMessage());
         }
         return notifications;
     }
@@ -583,10 +631,9 @@ public class DatabaseService {
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
             int affected = pstmt.executeUpdate();
-            System.out.println(userId + " ID'li kullanıcının " + affected + " bildirimi silindi.");
+            // System.out.println(userId + " ID'li kullanıcının " + affected + " bildirimi silindi.");
         } catch (SQLException e) {
-            System.out.println("Bildirimler silinirken hata: " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException("Failed to clear notifications for user: " + e.getMessage());
         }
     }
 
@@ -602,18 +649,17 @@ public class DatabaseService {
             
             int affected = pstmt.executeUpdate();
             if (affected > 0) {
-                System.out.println("✅ Bildirim tercihi başarıyla kaydedildi!");
-                System.out.println("User ID: " + userId);
-                System.out.println("Sefer Tipi: " + type);
-                System.out.println("Kalkış: " + origin);
-                System.out.println("Varış: " + destination);
-                System.out.println("Tarih: " + schedule);
+                // System.out.println("✅ Bildirim tercihi başarıyla kaydedildi!");
+                // System.out.println("User ID: " + userId);
+                // System.out.println("Sefer Tipi: " + type);
+                // System.out.println("Kalkış: " + origin);
+                // System.out.println("Varış: " + destination);
+                // System.out.println("Tarih: " + schedule);
             } else {
-                System.out.println("❌ Bildirim tercihi kaydedilemedi!");
+                // System.out.println("❌ Bildirim tercihi kaydedilemedi!");
             }
         } catch (SQLException e) {
-            System.err.println("❌ Bildirim tercihi kaydedilirken hata oluştu: " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException("Failed to add notification preference: " + e.getMessage());
         }
     }
 
@@ -634,14 +680,13 @@ public class DatabaseService {
                 admins.add(adminInfo);
             }
             
-            System.out.println("Toplam " + admins.size() + " admin bulundu");
-            for (String[] admin : admins) {
-                System.out.println("Admin ID: " + admin[0] + ", İsim: " + admin[1] + ", Email: " + admin[2]);
-            }
+            // System.out.println("Toplam " + admins.size() + " admin bulundu");
+            // for (String[] admin : admins) {
+            //     System.out.println("Admin ID: " + admin[0] + ", İsim: " + admin[1] + ", Email: " + admin[2]);
+            // }
             
         } catch (SQLException e) {
-            System.err.println("Adminler getirilirken hata oluştu: " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get admins: " + e.getMessage());
         }
         
         return admins;
@@ -657,8 +702,7 @@ public class DatabaseService {
             }
             return 1; // If no users exist yet, start with ID 1
         } catch (SQLException e) {
-            System.err.println("Error getting next user ID: " + e.getMessage());
-            return 1; // Default to 1 if there's an error
+            throw new RuntimeException("Failed to get next user ID: " + e.getMessage());
         }
     }
 
@@ -671,8 +715,7 @@ public class DatabaseService {
                 return affectedRows > 0;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException("Failed to delete reservations by user ID: " + e.getMessage());
         }
     }
 
@@ -693,7 +736,7 @@ public class DatabaseService {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get reservations by user ID: " + e.getMessage());
         }
         return reservations;
     }
@@ -720,8 +763,84 @@ public class DatabaseService {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get voyage by ID: " + e.getMessage());
         }
         return null;
+    }
+
+    // Admin için sefer ve koltuk numarasına göre rezervasyon sil
+    public static boolean deleteReservationByVoyageAndSeat(int voyageId, int seatNumber) {
+        System.out.println("Admin rezervasyon silme işlemi başladı:");
+        System.out.println("Voyage ID: " + voyageId);
+        System.out.println("Seat Number: " + seatNumber);
+
+        String sql = "DELETE FROM reservations WHERE voyage_id = ? AND seat_number = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, voyageId);
+            pstmt.setInt(2, seatNumber);
+            
+            // Önce rezervasyonun var olup olmadığını kontrol et
+            String checkSql = "SELECT COUNT(*) FROM reservations WHERE voyage_id = ? AND seat_number = ?";
+            try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
+                checkStmt.setInt(1, voyageId);
+                checkStmt.setInt(2, seatNumber);
+                ResultSet rs = checkStmt.executeQuery();
+                if (rs.next() && rs.getInt(1) == 0) {
+                    System.out.println("Rezervasyon bulunamadı!");
+                    return false;
+                }
+            }
+
+            int affected = pstmt.executeUpdate();
+            System.out.println("Silinen kayıt sayısı: " + affected);
+            return affected > 0;
+     
+        } catch (SQLException e) {
+            System.err.println("Rezervasyon silme hatası: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Rezervasyon silinirken bir hata oluştu: " + e.getMessage());
+        }
+    }
+
+    public static void loadAllVoyages() {
+        // Önce mevcut voyage'ları temizle
+        Voyage.getVoyageHashMap().clear();
+        
+        String sql = "SELECT * FROM voyages";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                int voyageId = rs.getInt("id");
+                String type = rs.getString("type");
+                String firm = rs.getString("firm");
+                String origin = rs.getString("origin");
+                String destination = rs.getString("destination");
+                String startTime = rs.getString("start_time");
+                String arrivalTime = rs.getString("arrival_time");
+                int seatCount = rs.getInt("seat_count");
+                double price = rs.getDouble("price");
+                String seatArrangement = rs.getString("seat_arrangement");
+
+                Voyage voyage = VoyageFactory.createVoyage(
+                    voyageId,
+                    type,
+                    firm,
+                    origin,
+                    destination,
+                    startTime,
+                    arrivalTime,
+                    seatCount,
+                    price,
+                    seatArrangement
+                );
+                
+                // Voyage'ı hashmap'e ekle
+                Voyage.getVoyageHashMap().put(voyageId, voyage);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Voyage verileri yüklenirken hata oluştu: " + e.getMessage());
+        }
     }
 }

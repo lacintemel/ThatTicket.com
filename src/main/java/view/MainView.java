@@ -18,6 +18,8 @@ import javax.imageio.ImageIO;
 import java.awt.Image;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainView extends JPanel {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -645,11 +647,37 @@ public class MainView extends JPanel {
     }
 
     private void updateTripList() {
-        String selectedOrigin = (String) originCombo.getSelectedItem();
-        String selectedDest = (String) destCombo.getSelectedItem();
-        java.util.Date selectedDate = dateChooser.getDate();
-
         cardListPanel.removeAll();
+        noVoyagesLabel.setVisible(false);
+        
+        // Voyage verilerini yenile
+        Voyage.getVoyageHashMap().clear();
+        
+        String selectedOrigin = (String) originCombo.getSelectedItem();
+        String selectedDestination = (String) destCombo.getSelectedItem();
+        Date selectedDate = dateChooser.getDate();
+
+        if (selectedDate == null) {
+            JLabel dateLabel = new JLabel("Lütfen bir tarih seçin", SwingConstants.CENTER);
+            dateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+            cardListPanel.add(dateLabel);
+            cardListPanel.revalidate();
+            cardListPanel.repaint();
+            return;
+        }
+
+        // Seçilen tarihi formatla
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String formattedDate = dateFormat.format(selectedDate);
+        
+        // Veritabanından güncel voyage'ları al
+        List<Voyage> allTrips;
+        if (isBusMode) {
+            allTrips = new ArrayList<>(DatabaseService.getAllBusVoyages());
+        } else {
+            allTrips = new ArrayList<>(DatabaseService.getAllFlightVoyages());
+        }
+        
         boolean hasMatchingTrips = false;
 
         for (Voyage trip : allTrips) {
@@ -661,40 +689,36 @@ public class MainView extends JPanel {
             }
 
             // Check destination
-            if (!selectedDest.equals("Select City") && !trip.getDestination().equals(selectedDest)) {
+            if (!selectedDestination.equals("Select City") && !trip.getDestination().equals(selectedDestination)) {
                 matches = false;
             }
 
             // Check date
-            if (selectedDate != null) {
-                try {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    String tripDate = trip.getStartTime().split(" ")[0];
-                    if (!tripDate.equals(sdf.format(selectedDate))) {
+            String tripDate = trip.getStartTime().split(" ")[0]; // Get only the date part
+            if (!tripDate.equals(formattedDate)) {
                         matches = false;
-                    }
-                } catch (Exception e) {
-                    matches = false;
-                }
             }
 
             if (matches) {
                 hasMatchingTrips = true;
-                cardListPanel.add(new TripCardPanel(trip, customer, this, reservationsPanel));
+                TripCardPanel card = new TripCardPanel(trip, customer, this, reservationsPanel);
+                cardListPanel.add(card);
                 cardListPanel.add(Box.createVerticalStrut(10));
             }
         }
 
-        // Show/hide no voyages message
         if (!hasMatchingTrips) {
-            String message;
-            if (selectedDate != null) {
-                SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy");
-                String formattedDate = sdf.format(selectedDate);
-                message = formattedDate + " tarihinde " + (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
-            } else {
-                message = "Seçilen kriterlere uygun " + (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
+            // Tarih formatını Türkçe'ye çevir
+            SimpleDateFormat turkishFormat = new SimpleDateFormat("dd MMMM yyyy");
+            String turkishDate = turkishFormat.format(selectedDate);
+            
+            // Mesajı oluştur
+            String message = turkishDate + " tarihinde ";
+            if (!selectedOrigin.equals("Select City") && !selectedDestination.equals("Select City")) {
+                message += selectedOrigin + " - " + selectedDestination + " arasında ";
             }
+            message += (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
+            
             noVoyagesLabel.setText(message);
             noVoyagesLabel.setVisible(true);
             cardListPanel.add(noVoyagesLabel);
@@ -712,6 +736,9 @@ public class MainView extends JPanel {
         cl.show(mainPanel, name);
         if (name.equals("TRIPS")) {
             dynamicTitle.setText(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri");
+            // Voyage verilerini yenile
+            Voyage.getVoyageHashMap().clear();
+            DatabaseService.loadAllVoyages();
             updateTripList();
         } else if (name.equals("RESERVATIONS")) {
             dynamicTitle.setText("Rezervasyonlar");
@@ -728,7 +755,6 @@ public class MainView extends JPanel {
 
     // Rezervasyonlar panelini güncelleyen fonksiyon
     public void updateReservationsPanel(Customer customer, JPanel reservationsPanel) {
-        System.out.println("Panel güncelleniyor...");
         reservationsCardListPanel.removeAll();
         
         if (customer == null && !isAdmin) {
@@ -740,6 +766,13 @@ public class MainView extends JPanel {
             return;
         }
 
+        // Önce tüm rezervasyonları temizle
+        reservationsCardListPanel.removeAll();
+        
+        // Voyage verilerini yenile
+        Voyage.getVoyageHashMap().clear();
+        DatabaseService.loadAllVoyages();
+
         java.util.List<services.DatabaseService.ReservationInfo> reservations;
         if (isAdmin) {
             // Admin için tüm rezervasyonları getir
@@ -749,29 +782,43 @@ public class MainView extends JPanel {
             reservations = services.DatabaseService.getReservationsForUser(Integer.parseInt(customer.getId()));
         }
 
-        System.out.println("Veritabanından rezervasyon sayısı: " + reservations.size());
         if (reservations.isEmpty()) {
             JLabel emptyLabel = new JLabel("Rezervasyonunuz bulunmamaktadır.", SwingConstants.CENTER);
-            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+            emptyLabel.setFont(new Font("Arial", Font.BOLD, 24));
+            emptyLabel.setForeground(new Color(100, 100, 100));
+            emptyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            emptyLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+            reservationsCardListPanel.add(Box.createVerticalGlue());
             reservationsCardListPanel.add(emptyLabel);
+            reservationsCardListPanel.add(Box.createVerticalGlue());
         } else {
+            // Tüm voyage'ları önceden yükle
+            Map<Integer, Voyage> voyageMap = new HashMap<>();
             for (services.DatabaseService.ReservationInfo res : reservations) {
-                Voyage voyage = Voyage.getVoyageHashMap().get(res.voyageId);
+                if (!voyageMap.containsKey(res.voyageId)) {
+                    Voyage voyage = Voyage.getVoyageHashMap().get(res.voyageId);
+                    if (voyage != null) {
+                        voyageMap.put(res.voyageId, voyage);
+                    }
+                }
+            }
+
+            // Rezervasyon kartlarını oluştur
+            for (services.DatabaseService.ReservationInfo res : reservations) {
+                Voyage voyage = voyageMap.get(res.voyageId);
                 if (voyage != null) {
-                    System.out.println("Voyage: " + voyage.getVoyageId() + ", Seat: " + res.seatNumber);
                     ReservationCardPanel panel = new ReservationCardPanel(
                         customer,
                         voyage,
                         res.seatNumber,
                         res.gender,
                         voyage.getType(),
-                        new ReservationsPanel(customer, user.getEmail(), isAdmin),
+                        new ReservationsPanel(customer, user.getEmail(), isAdmin, this),
                         user.getEmail(),
                         this,
                         res.reservationDate
                     );
                     if (isAdmin) {
-                        // Admin için kullanıcı bilgilerini ekle
                         panel.setUserInfo(res.userName, res.userEmail);
                     }
                     reservationsCardListPanel.add(panel);
@@ -779,6 +826,8 @@ public class MainView extends JPanel {
                 }
             }
         }
+        
+        // Panel güncellemesi
         reservationsCardListPanel.revalidate();
         reservationsCardListPanel.repaint();
     }

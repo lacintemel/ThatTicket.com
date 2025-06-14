@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import models.Customer;
 import models.Voyage;
-import models.User;
+import services.DatabaseService;
 
 public class ReservationCardPanel extends JPanel {
     private final Customer customer;
@@ -244,83 +244,45 @@ public class ReservationCardPanel extends JPanel {
         return label;
     }
     private JPanel createCancelButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        panel.setOpaque(false);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
+        
         JButton cancelButton = new JButton("İptal Et") {
             @Override
             protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(220, 53, 69));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
-                super.paintComponent(g2);
-                g2.dispose();
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(getBackground());
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                super.paintComponent(g);
+                g2d.dispose();
             }
         };
-        cancelButton.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        cancelButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         cancelButton.setForeground(Color.WHITE);
+        cancelButton.setBackground(new Color(220, 53, 69));
         cancelButton.setBorderPainted(false);
         cancelButton.setFocusPainted(false);
         cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelButton.setPreferredSize(new Dimension(160, 38));
+        
         cancelButton.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Bu rezervasyonu iptal etmek istediğinizden emin misiniz?",
-                "Rezervasyon İptali",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE
-            );
-            
+            int confirm = JOptionPane.showConfirmDialog(mainFrame, "Rezervasyonunuzu iptal etmek istediğinizden emin misiniz?", "Rezervasyon İptali", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                try {
-                    // Admin için kullanıcı ID'sini email ile bul
-                    User currentUser = services.DatabaseService.getUserByEmail(adminEmail);
-                    if (currentUser != null) {
-                        boolean success = services.DatabaseService.deleteReservation(
-                            Integer.parseInt(currentUser.getId()),
-                            trip.getVoyageId(),
-                            reservedSeatNumber
-                        );
-                        
-                        if (success) {
-                            JOptionPane.showMessageDialog(
-                                this,
-                                "Rezervasyon başarıyla iptal edildi.",
-                                "Başarılı",
-                                JOptionPane.INFORMATION_MESSAGE
-                            );
-                            if (reservationsPanel != null) {
-                                reservationsPanel.refreshReservations();
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(
-                                this,
-                                "Rezervasyon iptal edilirken bir hata oluştu.",
-                                "Hata",
-                                JOptionPane.ERROR_MESSAGE
-                            );
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(
-                            this,
-                            "Kullanıcı bilgisi bulunamadı.",
-                            "Hata",
-                            JOptionPane.ERROR_MESSAGE
-                        );
-                    }
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        "Rezervasyon iptal edilirken bir hata oluştu: " + ex.getMessage(),
-                        "Hata",
-                        JOptionPane.ERROR_MESSAGE
-                    );
+                if (mainView.isAdmin()) {
+                    DatabaseService.deleteReservationByVoyageAndSeat(trip.getVoyageId(), reservedSeatNumber);
+                    JOptionPane.showMessageDialog(mainFrame, "Admin tarafından rezervasyon başarıyla silindi.", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    DatabaseService.deleteReservation(Integer.parseInt(customer.getId()), trip.getVoyageId(), reservedSeatNumber);
+                    JOptionPane.showMessageDialog(mainFrame, "Rezervasyonunuz başarıyla iptal edildi.", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
+                }
+                if (mainView != null) {
+                    mainView.updateReservationsPanel(customer, reservationsPanel);
                 }
             }
         });
-        panel.add(cancelButton);
-        return panel;
+        
+        buttonPanel.add(cancelButton);
+        return buttonPanel;
     }
 
     public void setUserInfo(String userName, String userEmail) {

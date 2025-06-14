@@ -185,10 +185,12 @@ public class TransportPanel extends JPanel {
             particles.add(new SmokeParticle());
         }
 
-        // Start smoke animation timer
+        // Start smoke animation timer with proper visibility handling
         smokeTimer = new Timer(50, e -> {
+            if (isVisible() && isShowing()) {
             updateParticles();
             repaint();
+            }
         });
         smokeTimer.start();
 
@@ -197,12 +199,55 @@ public class TransportPanel extends JPanel {
             clouds.add(new Cloud());
         }
 
-        // Start cloud animation timer
+        // Start cloud animation timer with proper visibility handling
         cloudTimer = new Timer(50, e -> {
+            if (isVisible() && isShowing()) {
             updateClouds();
             repaint();
+            }
         });
         cloudTimer.start();
+
+        // Add component listener to handle visibility changes
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                if (!smokeTimer.isRunning()) {
+                    smokeTimer.start();
+                }
+                if (!cloudTimer.isRunning()) {
+                    cloudTimer.start();
+                }
+            }
+
+            @Override
+            public void componentHidden(java.awt.event.ComponentEvent e) {
+                smokeTimer.stop();
+                cloudTimer.stop();
+            }
+        });
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        if (smokeTimer != null) {
+            smokeTimer.stop();
+        }
+        if (cloudTimer != null) {
+            cloudTimer.stop();
+        }
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        if (smokeTimer != null && !smokeTimer.isRunning()) {
+            smokeTimer.start();
+        }
+        if (cloudTimer != null && !cloudTimer.isRunning()) {
+            cloudTimer.start();
+        }
     }
 
     private void updateParticles() {
@@ -385,17 +430,6 @@ public class TransportPanel extends JPanel {
     private void notifyTransportModeChanged() {
         for (TransportModeChangeListener listener : listeners) {
             listener.onTransportModeChanged(isBusMode);
-        }
-    }
-
-    @Override
-    public void removeNotify() {
-        super.removeNotify();
-        if (smokeTimer != null) {
-            smokeTimer.stop();
-        }
-        if (cloudTimer != null) {
-            cloudTimer.stop();
         }
     }
 }

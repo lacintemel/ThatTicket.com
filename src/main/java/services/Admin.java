@@ -29,7 +29,6 @@ public class Admin extends User implements Subject{
         
         commandCaller = new CommandCaller();
         this.observers = new ArrayList<>();
-        System.out.println("Admin oluşturuldu: " + name + ", ID: " + id);
     }
     
     // Default constructor for inheritance
@@ -142,8 +141,7 @@ public class Admin extends User implements Subject{
                     observer.updateNotifications(voyage);
                 }
             } catch (Exception e) {
-                System.out.println("Bildirim gönderilirken hata: " + e.getMessage());
-                e.printStackTrace();
+                throw new RuntimeException("Failed to notify observer: " + e.getMessage());
             }
         }
         System.out.println("=== Bildirim Gönderme Tamamlandı ===\n");
@@ -153,15 +151,12 @@ public class Admin extends User implements Subject{
     public void addObserver(Observer observer) {
         if (!observers.contains(observer)) {
             observers.add(observer);
-            System.out.println("Yeni observer eklendi. Toplam observer sayısı: " + observers.size());
-            System.out.println("Observer tipi: " + observer.getClass().getSimpleName());
         }
     }
 
     @Override
     public void removeObserver(Observer observer) {
         observers.remove(observer);
-        System.out.println("Observer kaldırıldı. Kalan observer sayısı: " + observers.size());
     }
     
     public static Admin getAdminByEmail(String email) {
