@@ -62,32 +62,24 @@ public class Admin extends User implements Subject{
         System.out.println("Admin Kodu: " + adminCode);
         System.out.println("İsim: " + name);
         System.out.println("Email: " + email);
+
+        // Singleton instance'ı oluştur
+        instance = getInstance(id, adminCode, name, email, password);
         
-        if (Director.getAdminCodes().contains(adminCode)) {
-            Director.getAdminCodes().remove(adminCode);
-            
-            // Singleton instance'ı oluştur
-            instance = getInstance(id, adminCode, name, email, password);
-            
-            // HashMap'e ekle
-            User.getUsersHashMap().put(instance.getEmail(), instance);
-            System.out.println("Admin HashMap'e eklendi. Toplam kullanıcı sayısı: " + User.getUsersHashMap().size());
-            
-            // Veritabanına kaydet
-            try {
-                User user = new User(id, name, email, password, "Admin");
-                DatabaseService.addUser(user);
-                System.out.println("Admin veritabanına kaydedildi");
-            } catch (Exception e) {
-                System.err.println("Admin veritabanına kaydedilirken hata: " + e.getMessage());
-                e.printStackTrace();
-            }
-            
-            System.out.println("=== Admin Kaydı Tamamlandı ===\n");
-        } else {
-            System.err.println("Geçersiz admin kodu: " + adminCode);
-            throw new IllegalArgumentException("Geçersiz admin kodu!");
+        // HashMap'e ekle
+        User.getUsersHashMap().put(instance.getEmail(), instance);
+        System.out.println("Admin HashMap'e eklendi. Toplam kullanıcı sayısı: " + User.getUsersHashMap().size());
+        
+        // Veritabanına kaydet
+        try {
+            DatabaseService.addUser(instance);  // Admin instance'ını direkt olarak kullan
+            System.out.println("Admin veritabanına kaydedildi");
+        } catch (Exception e) {
+            System.err.println("Admin veritabanına kaydedilirken hata: " + e.getMessage());
+            e.printStackTrace();
         }
+        
+        System.out.println("=== Admin Kaydı Tamamlandı ===\n");
     }
     
     public void addVoyage(int voyageId, String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement) {

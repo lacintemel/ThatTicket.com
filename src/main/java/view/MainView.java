@@ -18,8 +18,6 @@ import javax.imageio.ImageIO;
 import java.awt.Image;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MainView extends JPanel {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -755,81 +753,44 @@ public class MainView extends JPanel {
 
     // Rezervasyonlar panelini güncelleyen fonksiyon
     public void updateReservationsPanel(Customer customer, JPanel reservationsPanel) {
-        reservationsCardListPanel.removeAll();
+        this.customer = customer;
+        this.reservationsPanel = reservationsPanel;
         
-        if (customer == null && !isAdmin) {
-            JLabel emptyLabel = new JLabel("Rezervasyonlar sadece müşteri hesapları için geçerlidir.", SwingConstants.CENTER);
-            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
-            reservationsCardListPanel.add(emptyLabel);
-            reservationsCardListPanel.revalidate();
-            reservationsCardListPanel.repaint();
-            return;
-        }
-
-        // Önce tüm rezervasyonları temizle
-        reservationsCardListPanel.removeAll();
+        // Loading göstergesi ekle
+        JPanel loadingPanel = new JPanel(new GridBagLayout());
+        loadingPanel.setBackground(Color.WHITE);
+        JLabel loadingLabel = new JLabel("Rezervasyonlar yükleniyor...");
+        loadingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        loadingPanel.add(loadingLabel);
         
-        // Voyage verilerini yenile
-        Voyage.getVoyageHashMap().clear();
-        DatabaseService.loadAllVoyages();
+        // Önce loading paneli göster
+        reservationsPanel.removeAll();
+        reservationsPanel.add(loadingPanel);
+        reservationsPanel.revalidate();
+        reservationsPanel.repaint();
 
-        java.util.List<services.DatabaseService.ReservationInfo> reservations;
-        if (isAdmin) {
-            // Admin için tüm rezervasyonları getir
-            reservations = services.DatabaseService.getAllReservations();
-        } else {
-            // Normal kullanıcı için kendi rezervasyonlarını getir
-            reservations = services.DatabaseService.getReservationsForUser(Integer.parseInt(customer.getId()));
-        }
-
-        if (reservations.isEmpty()) {
-            JLabel emptyLabel = new JLabel("Your reservation is not available.", SwingConstants.CENTER);
-            emptyLabel.setFont(new Font("Arial", Font.BOLD, 24));
-            emptyLabel.setForeground(new Color(100, 100, 100));
-            emptyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            emptyLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-            reservationsCardListPanel.add(Box.createVerticalGlue());
-            reservationsCardListPanel.add(emptyLabel);
-            reservationsCardListPanel.add(Box.createVerticalGlue());
-        } else {
-            // Tüm voyage'ları önceden yükle
-            Map<Integer, Voyage> voyageMap = new HashMap<>();
-            for (services.DatabaseService.ReservationInfo res : reservations) {
-                if (!voyageMap.containsKey(res.voyageId)) {
-                    Voyage voyage = Voyage.getVoyageHashMap().get(res.voyageId);
-                    if (voyage != null) {
-                        voyageMap.put(res.voyageId, voyage);
-                    }
-                }
+        // Arka planda rezervasyonları yükle
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                // Voyage verilerini önceden yükle
+                Voyage.getVoyageHashMap().clear();
+                DatabaseService.loadAllVoyages();
+                return null;
             }
 
-            // Rezervasyon kartlarını oluştur
-            for (services.DatabaseService.ReservationInfo res : reservations) {
-                Voyage voyage = voyageMap.get(res.voyageId);
-                if (voyage != null) {
-                    ReservationCardPanel panel = new ReservationCardPanel(
-                        customer,
-                        voyage,
-                        res.seatNumber,
-                        res.gender,
-                        voyage.getType(),
-                        new ReservationsPanel(customer, user.getEmail(), isAdmin, this),
-                        user.getEmail(),
-                        this,
-                        res.reservationDate
-                    );
-                    if (isAdmin) {
-                        panel.setUserInfo(res.userName, res.userEmail);
-                    }
-                    reservationsCardListPanel.add(panel);
-                    reservationsCardListPanel.add(Box.createVerticalStrut(10));
-                }
+            @Override
+            protected void done() {
+                // Yükleme tamamlandığında ReservationsPanel'i oluştur
+                ReservationsPanel newReservationsPanel = new ReservationsPanel(customer, user.getEmail(), isAdmin, MainView.this);
+                reservationsPanel.removeAll();
+                reservationsPanel.add(newReservationsPanel, BorderLayout.CENTER);
+                reservationsPanel.revalidate();
+                reservationsPanel.repaint();
             }
-        }
+        };
         
-        // Panel güncellemesi
-        reservationsCardListPanel.revalidate();
-        reservationsCardListPanel.repaint();
+        worker.execute();
     }
 
     public JList<String> getBusList() {

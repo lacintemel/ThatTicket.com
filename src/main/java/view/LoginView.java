@@ -195,6 +195,15 @@ public class LoginView extends JPanel {
                                 user.getEmail(),
                                 user.getPassword()
                             );
+                        } else if (user.getUser_type().equals("Admin")) {
+                            // Admin kullanıcısı için Admin instance'ını kullan
+                            user = services.Admin.getInstance(
+                                user.getId(),
+                                "1111", // Default admin code
+                                user.getName(),
+                                user.getEmail(),
+                                user.getPassword()
+                            );
                         }
                         
                         // Always show MainView, which will handle admin/customer specific content

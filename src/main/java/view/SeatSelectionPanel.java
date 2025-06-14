@@ -110,7 +110,7 @@ public class SeatSelectionPanel extends JPanel {
         buttonPanel.setOpaque(false);
 
         // İptal butonu
-        JButton cancelButton = new JButton("İptal") {
+        JButton cancelButton = new JButton("Cancel") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -128,8 +128,51 @@ public class SeatSelectionPanel extends JPanel {
         cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         cancelButton.setPreferredSize(new Dimension(120, 38));
         cancelButton.addActionListener(e -> {
-            if (mainView != null) {
-                mainView.showReservationsTab(); // Ana görünüme geri dön
+            try {
+                // Seçili koltukları temizle
+                selectedSeats.clear();
+                
+                // Koltuk butonlarını sıfırla
+                for (Component comp : seatGridPanel.getComponents()) {
+                    if (comp instanceof JPanel) {
+                        JPanel rowPanel = (JPanel) comp;
+                        for (Component rowComp : rowPanel.getComponents()) {
+                            if (rowComp instanceof JButton) {
+                                JButton btn = (JButton) rowComp;
+                                if (!btn.getText().equals("DOLU")) {
+                                    btn.setBackground(new Color(52, 152, 219));
+                                    btn.setText("");
+                                    btn.setToolTipText("Boş");
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Etiketleri sıfırla
+                selectedSeatsLabel.setText("Seçili Koltuk: -");
+                totalPriceLabel.setText("Toplam: 0 TL");
+                
+                // Rezervasyon butonunu devre dışı bırak
+                reserveButton.setEnabled(false);
+                
+                // Ana görünüme dön
+                if (mainView != null) {
+                    // Bu paneli kaldır
+                    Window window = SwingUtilities.getWindowAncestor(this);
+                    if (window != null) {
+                        window.dispose();
+                    }
+                    // Ana görünümü göster
+                    mainView.setVisible(true);
+                }
+            } catch (Exception ex) {
+                System.err.println("İptal işlemi sırasında hata oluştu: " + ex.getMessage());
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, 
+                    "İptal işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.", 
+                    "Hata", 
+                    JOptionPane.ERROR_MESSAGE);
             }
         });
 

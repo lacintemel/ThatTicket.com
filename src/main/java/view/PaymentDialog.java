@@ -4,9 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import models.Customer;
-import models.Voyage;
 import services.DatabaseService;
-import javax.swing.border.AbstractBorder;
 import view.SeatSelectionPanel.SelectedSeat;
 
 public class PaymentDialog extends JDialog {
@@ -137,49 +135,80 @@ public class PaymentDialog extends JDialog {
         payButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         payButton.setPreferredSize(new Dimension(120, 38));
         payButton.addActionListener(e -> {
-            // Ödeme işlemi başarılı olduğunda
-            for (SelectedSeat seat : selectedSeats) {
-                // Rezervasyonu kaydet
-                DatabaseService.addReservation(
-                    Integer.parseInt(customer.getId()),
-                    voyageId,
-                    seat.seatNum,
-                    seat.gender
-                );
-                
-                // Bildirimi ekle
-                try {
-                    String notification = "🎫 [Rezervasyon] " + 
-                        Voyage.getVoyageHashMap().get(voyageId).getOrigin() + " - " + 
-                        Voyage.getVoyageHashMap().get(voyageId).getDestination() + 
-                        " seferi için " + seat.seatNum + " numaralı koltuk ayrıldı. Ödeme başarıyla tamamlandı.";
-                    
-                    System.out.println("\n=== Bildirim Ekleme Başladı ===");
-                    System.out.println("User ID: " + customer.getId());
-                    System.out.println("Bildirim mesajı: " + notification);
-                    
-                    DatabaseService.addNotification(Integer.parseInt(customer.getId()), notification);
-                    System.out.println("✅ Bildirim başarıyla eklendi!");
-                } catch (Exception ex) {
-                    System.err.println("❌ Bildirim eklenirken hata oluştu: " + ex.getMessage());
-                    ex.printStackTrace();
+            // Loading dialog'u göster
+            LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(this), "Ödeme işlemi gerçekleştiriliyor...");
+            
+            // Ödeme işlemini arka planda yap
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    try {
+                        // Rezervasyonları veritabanına kaydet
+                        for (SeatSelectionPanel.SelectedSeat seat : selectedSeats) {
+                            DatabaseService.addReservation(
+                                Integer.parseInt(customer.getId()),
+                                voyageId,
+                                seat.seatNum,
+                                seat.gender
+                            );
+                        }
+                        
+                        // Başarılı rezervasyon bildirimi ekle
+                        DatabaseService.addNotification(
+                            Integer.parseInt(customer.getId()),
+                            "Rezervasyonunuz başarıyla tamamlandı!"
+                        );
+                        
+                        return null;
+                    } catch (Exception ex) {
+                        throw ex;
+                    }
                 }
-            }
+                
+                @Override
+                protected void done() {
+                    try {
+                        // Loading dialog'u kapat
+                        loadingDialog.dispose();
+                        
+                        // Başarılı mesajı göster
+                        JOptionPane.showMessageDialog(
+                            PaymentDialog.this,
+                            "Ödeme başarıyla tamamlandı!",
+                            "Başarılı",
+                            JOptionPane.INFORMATION_MESSAGE
+                        );
+                        
+                        // Rezervasyonlar panelini güncelle
+                        if (reservationsPanel != null) {
+                            reservationsPanel.removeAll();
+                            reservationsPanel.revalidate();
+                            reservationsPanel.repaint();
+                        }
+                        
+                        // Pencereyi kapat
+                        Window window = SwingUtilities.getWindowAncestor(PaymentDialog.this);
+                        if (window != null) {
+                            window.dispose();
+                        }
+                        
+                        // Ana görünümü göster
+                        if (mainView != null) {
+                            mainView.setVisible(true);
+                        }
+                    } catch (Exception ex) {
+                        loadingDialog.dispose();
+                        JOptionPane.showMessageDialog(
+                            PaymentDialog.this,
+                            "Ödeme işlemi sırasında bir hata oluştu: " + ex.getMessage(),
+                            "Hata",
+                            JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                }
+            };
             
-            // Rezervasyonlar panelini güncelle
-            if (mainView != null && reservationsPanel != null) {
-                mainView.updateReservationsPanel(customer, reservationsPanel);
-            }
-            
-            // Dialog'u kapat
-            dispose();
-            
-            // Koltuk seçim penceresini kapat
-            Window window = SwingUtilities.getWindowAncestor(seatSelectionPanel);
-            if (window != null) window.dispose();
-            
-            // Başarılı mesajı göster
-            JOptionPane.showMessageDialog(this, "Rezervasyonunuz başarıyla tamamlandı!", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
+            worker.execute();
         });
 
         buttonPanel.add(cancelButton);
@@ -242,41 +271,3 @@ class RoundedTextFieldModern extends JTextField {
         super.paintComponent(g);
     }
 }
-
-// Oval border
-class RoundedBorder extends AbstractBorder {
-    private final int radius;
-    public RoundedBorder(int radius) { this.radius = radius; }
-    @Override
-    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(new Color(220,220,220));
-        g2.drawRoundRect(x, y, width-1, height-1, radius, radius);
-        g2.dispose();
-    }
-}
-
-// Oval buton
-class RoundedButton extends JButton {
-    private final Color bgColor;
-    public RoundedButton(String text, Color bgColor) {
-        super(text);
-        this.bgColor = bgColor;
-        setContentAreaFilled(false);
-        setFocusPainted(false);
-        setForeground(Color.WHITE);
-        setFont(new Font("Segoe UI", Font.BOLD, 16));
-        setCursor(new Cursor(Cursor.HAND_CURSOR));
-        setBorder(new RoundedBorder(20));
-    }
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(bgColor);
-        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-        super.paintComponent(g2);
-        g2.dispose();
-    }
-} 

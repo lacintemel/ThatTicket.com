@@ -15,6 +15,11 @@ public class DatabaseService {
     private static Connection connection;
     private static HashMap<String, User> usersCache = new HashMap<>();
 
+    // Veritabanı bağlantısını döndür
+    public static Connection getConnection() {
+        return connection;
+    }
+
     // Veritabanı başlatma
     public static void initialize() {
         try {
