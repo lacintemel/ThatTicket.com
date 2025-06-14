@@ -116,7 +116,7 @@ public class ReservationCardPanel extends JPanel {
         bottomInfoPanel.add(userInfoLabel, BorderLayout.WEST);
 
         // Date label (right side)
-        JLabel dateLabel = new JLabel("Alınma Tarihi: " + reservationDate);
+        JLabel dateLabel = new JLabel("Received Date: " + reservationDate);
         dateLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         dateLabel.setForeground(new Color(120, 120, 120));
         bottomInfoPanel.add(dateLabel, BorderLayout.EAST);

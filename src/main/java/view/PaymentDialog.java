@@ -53,7 +53,7 @@ public class PaymentDialog extends JDialog {
         cardPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
         // Title
-        JLabel titleLabel = new JLabel("Ödeme Bilgileri", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("Payment Information", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(30, 30, 30));
         cardPanel.add(titleLabel);
@@ -66,7 +66,7 @@ public class PaymentDialog extends JDialog {
 
         // Card number
         RoundedTextFieldModern cardNumberField = new RoundedTextFieldModern(16);
-        cardNumberField.setPlaceholder("Kart Numarası");
+        cardNumberField.setPlaceholder("Card Number");
         formPanel.add(cardNumberField);
         formPanel.add(Box.createVerticalStrut(15));
 
@@ -84,7 +84,7 @@ public class PaymentDialog extends JDialog {
 
         // Name
         RoundedTextFieldModern nameField = new RoundedTextFieldModern(20);
-        nameField.setPlaceholder("Kart Üzerindeki İsim");
+        nameField.setPlaceholder("Name on Card");
         formPanel.add(nameField);
         formPanel.add(Box.createVerticalStrut(30));
 
@@ -95,7 +95,7 @@ public class PaymentDialog extends JDialog {
         buttonPanel.setOpaque(false);
 
         // Cancel button
-        JButton cancelButton = new JButton("İptal") {
+        JButton cancelButton = new JButton("Cancel") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -115,7 +115,7 @@ public class PaymentDialog extends JDialog {
         cancelButton.addActionListener(e -> dispose());
 
         // Pay button
-        JButton payButton = new JButton("Öde") {
+        JButton payButton = new JButton("Pay") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();

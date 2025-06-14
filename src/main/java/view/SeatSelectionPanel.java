@@ -435,16 +435,16 @@ public class SeatSelectionPanel extends JPanel {
         // Cinsiyet seçimi penceresi
         String[] options;
         if (allowedGender == null) {
-            options = new String[]{"Kadın", "Erkek"};
-        } else if (allowedGender.equals("Kadın")) {
-            options = new String[]{"Kadın"};
+            options = new String[]{"Woman", "Man"};
+        } else if (allowedGender.equals("Woman")) {
+            options = new String[]{"Woman"};
         } else { // allowedGender must be "Erkek"
-            options = new String[]{"Erkek"};
+            options = new String[]{"Man"};
         }
         int genderChoice = JOptionPane.showOptionDialog(
             btn,
             allowedGender == null ? "Lütfen cinsiyet seçiniz:" : ("Yan koltukta cinsiyet kuralı: Sadece " + allowedGender + " seçebilirsiniz."),
-            "Cinsiyet Seçimi",
+            "Gender Selection",
             JOptionPane.DEFAULT_OPTION,
             JOptionPane.QUESTION_MESSAGE,
             null,
@@ -455,7 +455,7 @@ public class SeatSelectionPanel extends JPanel {
         String selectedGender = options[genderChoice];
         // Seçili koltuklara ekle
         selectedSeats.add(new SelectedSeat(seatNum, selectedGender, btn));
-        if (selectedGender.equals("Kadın")) {
+        if (selectedGender.equals("Woman")) {
             btn.setBackground(new Color(255, 105, 180)); // PEMBE
         } else {
             btn.setBackground(new Color(52, 152, 219)); // MAVİ
@@ -560,7 +560,7 @@ public class SeatSelectionPanel extends JPanel {
     }
 
     private void updateSelectedSeatsLabel() {
-        StringBuilder sb = new StringBuilder("Seçili Koltuklar: ");
+        StringBuilder sb = new StringBuilder("Selected Seats:: ");
         double totalPrice = 0;
         Voyage voyage = models.Voyage.getVoyageHashMap().get(voyageId);
         
@@ -574,6 +574,6 @@ public class SeatSelectionPanel extends JPanel {
         }
         
         selectedSeatsLabel.setText(sb.toString());
-        totalPriceLabel.setText(String.format("Toplam: %.2f TL", totalPrice));
+        totalPriceLabel.setText(String.format("Total: %.2f TL", totalPrice));
     }
 } 

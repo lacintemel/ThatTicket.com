@@ -436,7 +436,7 @@ public class AdminVoyagePanel extends JPanel {
                             // Show success message
                             JOptionPane.showMessageDialog(this, 
                                 "Sefer başarıyla eklendi!", 
-                                "Başarılı", 
+                                "Succssful", 
                                 JOptionPane.INFORMATION_MESSAGE);
                                 
                             // Ana ekrana dön
@@ -446,7 +446,7 @@ public class AdminVoyagePanel extends JPanel {
                         } else {
                             JOptionPane.showMessageDialog(this, 
                                 "Sefer oluşturulurken bir hata oluştu!", 
-                                "Hata", 
+                                "Error", 
                                 JOptionPane.ERROR_MESSAGE);
                         }
                     } catch (Exception ex) {

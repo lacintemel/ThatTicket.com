@@ -190,7 +190,7 @@ import java.net.URL;
             deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             deleteButton.setToolTipText("Sil");
             deleteButton.addActionListener(e -> {
-                int result = JOptionPane.showConfirmDialog(this, "Bu seferi silmek istediğinize emin misiniz?", "Onay", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                int result = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this expedition?", "Accept", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                 if (result == JOptionPane.YES_OPTION) {
                     DatabaseService.deleteVoyageFromDB(trip.getVoyageId());
                     Container parent = this.getParent();
@@ -261,7 +261,7 @@ import java.net.URL;
             availablePanel.setOpaque(false);
             availablePanel.setLayout(new GridBagLayout());
             int availableSeats = trip.getSeatCount() - DatabaseService.getReservedSeats(trip.getVoyageId()).size();
-            JLabel availableLabel = new JLabel(availableSeats + " Boş Koltuk");
+            JLabel availableLabel = new JLabel(availableSeats + " Empty Seat");
             availableLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
             availableLabel.setForeground(new Color(80, 80, 80));
             availablePanel.add(availableLabel);
@@ -327,7 +327,7 @@ import java.net.URL;
         private JPanel createBuyButtonPanel(Color mainColor) {
             JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
             panel.setOpaque(false);
-            JButton buyButton = new JButton("Satın Al") {
+            JButton buyButton = new JButton("Buy") {
                 @Override
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
@@ -354,10 +354,10 @@ import java.net.URL;
             buyButton.setPreferredSize(new Dimension(120, 44));
             buyButton.addActionListener(e -> {
                 if (availableSeats <= 0) {
-                    JOptionPane.showMessageDialog(this, "Üzgünüz, bu seferde boş koltuk kalmamıştır.", "Uyarı", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Sorry, there are no seats left this time.", "Uyarı", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
-                JFrame seatFrame = new JFrame("Koltuk Seçimi");
+                JFrame seatFrame = new JFrame("Seat Selection");
                 seatFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
                 seatFrame.setContentPane(new view.SeatSelectionPanel(
                     trip.getVoyageId(),

@@ -86,7 +86,7 @@ public class MainView extends JPanel {
         leftButtonsPanel.setOpaque(false);
         
         // User type label
-        JLabel userTypeLabel = new JLabel(isAdmin ? "👑 Admin" : "👤 Müşteri");
+        JLabel userTypeLabel = new JLabel(isAdmin ? "👑 Admin" : "👤 Customer");
         userTypeLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         userTypeLabel.setForeground(new Color(70, 70, 70));
         leftButtonsPanel.add(userTypeLabel);
@@ -123,7 +123,7 @@ public class MainView extends JPanel {
         signOutBtn.setFocusPainted(false);
         signOutBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         signOutBtn.setPreferredSize(new Dimension(40, 38));
-        signOutBtn.setToolTipText("Çıkış Yap");
+        signOutBtn.setToolTipText("Exit");
         signOutBtn.addActionListener(e -> {
             if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
                 com.mycompany.aoopproject.AOOPProject aoopProjectFrame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
@@ -158,8 +158,8 @@ public class MainView extends JPanel {
         deleteAccountBtn.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(
                 this,
-                "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!",
-                "Hesap Silme Onayı",
+                "Are you sure you want to delete your account? This action is irreversible!",
+                "Account Deletion Confirmation",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE
             );
@@ -200,7 +200,7 @@ public class MainView extends JPanel {
         headerPanel.add(leftButtonsPanel, BorderLayout.WEST);
 
         // Başlık
-        dynamicTitle = new JLabel(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri", SwingConstants.CENTER);
+        dynamicTitle = new JLabel(isBusMode ? "Bus Schedules" : "Flight Schedules", SwingConstants.CENTER);
         dynamicTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
         headerPanel.add(dynamicTitle, BorderLayout.CENTER);
 
@@ -299,11 +299,11 @@ public class MainView extends JPanel {
         // Set initial date to today after dateChooser is initialized
         dateChooser.setDate(new java.util.Date());
 
-        filterPanel.add(new JLabel("Kalkış:"));
+        filterPanel.add(new JLabel("Departure:"));
         filterPanel.add(originCombo);
-        filterPanel.add(new JLabel("Varış:"));
+        filterPanel.add(new JLabel("Arrival:"));
         filterPanel.add(destCombo);
-        filterPanel.add(new JLabel("Tarih:"));
+        filterPanel.add(new JLabel("Date:"));
         filterPanel.add(dateChooser);
 
         // Notify Me button
@@ -472,7 +472,7 @@ public class MainView extends JPanel {
         Color tabActiveBg = new Color(120, 130, 145);
         Color tabActiveText = Color.WHITE;
         
-        JButton btnTrips = new JButton("Seyahatler") {
+        JButton btnTrips = new JButton("Travels") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -500,7 +500,7 @@ public class MainView extends JPanel {
         btnTrips.setFocusPainted(false);
         btnTrips.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnTrips.setPreferredSize(new Dimension(140, 35));
-        JButton btnReservations = new JButton("Rezervasyonlar") {
+        JButton btnReservations = new JButton("Reservations") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -529,7 +529,7 @@ public class MainView extends JPanel {
         btnReservations.setPreferredSize(new Dimension(140, 35));
         
         // Notifications button
-        JButton btnNotifications = new JButton("Bildirimler") {
+        JButton btnNotifications = new JButton("Notifications") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -560,7 +560,7 @@ public class MainView extends JPanel {
         // Admin için "Yeni Sefer Ekle" butonu
         JButton addVoyageBtn = null;
         if (isAdmin) {
-            addVoyageBtn = new JButton("Yeni Sefer Ekle") {
+            addVoyageBtn = new JButton("Add New Expedition") {
                 @Override
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
@@ -713,11 +713,11 @@ public class MainView extends JPanel {
             String turkishDate = turkishFormat.format(selectedDate);
             
             // Mesajı oluştur
-            String message = turkishDate + " tarihinde ";
+            String message = turkishDate + " on ";
             if (!selectedOrigin.equals("Select City") && !selectedDestination.equals("Select City")) {
-                message += selectedOrigin + " - " + selectedDestination + " arasında ";
+            message += selectedOrigin + " - " + selectedDestination + " between ";
             }
-            message += (isBusMode ? "otobüs" : "uçak") + " seferi bulunmamaktadır.";
+            message += (isBusMode ? "bus" : "plane") + " there is no flight.";
             
             noVoyagesLabel.setText(message);
             noVoyagesLabel.setVisible(true);
@@ -735,16 +735,16 @@ public class MainView extends JPanel {
         CardLayout cl = (CardLayout) (mainPanel.getLayout());
         cl.show(mainPanel, name);
         if (name.equals("TRIPS")) {
-            dynamicTitle.setText(isBusMode ? "Otobüs Seferleri" : "Uçak Seferleri");
+            dynamicTitle.setText(isBusMode ? "Bus Schedules" : "Flight Schedules");
             // Voyage verilerini yenile
             Voyage.getVoyageHashMap().clear();
             DatabaseService.loadAllVoyages();
             updateTripList();
         } else if (name.equals("RESERVATIONS")) {
-            dynamicTitle.setText("Rezervasyonlar");
+            dynamicTitle.setText("Rezervations");
             updateReservationsPanel(this.customer, reservationsPanel);
         } else if (name.equals("NOTIFICATIONS")) {
-            dynamicTitle.setText("Bildirimler");
+            dynamicTitle.setText("Notifications");
             updateNotifications();
         }
         
@@ -783,7 +783,7 @@ public class MainView extends JPanel {
         }
 
         if (reservations.isEmpty()) {
-            JLabel emptyLabel = new JLabel("Rezervasyonunuz bulunmamaktadır.", SwingConstants.CENTER);
+            JLabel emptyLabel = new JLabel("Your reservation is not available.", SwingConstants.CENTER);
             emptyLabel.setFont(new Font("Arial", Font.BOLD, 24));
             emptyLabel.setForeground(new Color(100, 100, 100));
             emptyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -856,13 +856,13 @@ public class MainView extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
         
-        JLabel titleLabel = new JLabel("Tüm Bildirimler");
+        JLabel titleLabel = new JLabel("All Notifications");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(51, 51, 51));
         topPanel.add(titleLabel, BorderLayout.WEST);
 
         // Clear notifications button
-        JButton clearButton = new JButton("Bildirimleri Temizle") {
+        JButton clearButton = new JButton("Clear Notifications") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g.create();
@@ -929,7 +929,7 @@ public class MainView extends JPanel {
         if (customer != null) { // Only fetch notifications if a customer is logged in
             ArrayList<String[]> notifications = DatabaseService.getNotificationsForUser(Integer.parseInt(customer.getId()));
             if (notifications.isEmpty()) {
-                JLabel noNotificationsLabel = new JLabel("Henüz bildiriminiz bulunmuyor.");
+                JLabel noNotificationsLabel = new JLabel("You don't have any notifications yet.");
                 noNotificationsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
                 noNotificationsLabel.setForeground(new Color(128, 128, 128));
                 noNotificationsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -945,7 +945,7 @@ public class MainView extends JPanel {
                 }
             }
         } else { // For Admin or if no customer is available
-            JLabel noNotificationsLabel = new JLabel("Bildirimler bu hesap türü için geçerli değildir.");
+            JLabel noNotificationsLabel = new JLabel("Notifications do not apply to this account type.");
             noNotificationsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
             noNotificationsLabel.setForeground(new Color(128, 128, 128));
             noNotificationsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
