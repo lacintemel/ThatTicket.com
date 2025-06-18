@@ -34,7 +34,7 @@ public class LoginView extends JPanel {
         rightPanel = new TransportPanel();
 
         // Set fixed size for left panel
-        leftPanel.setPreferredSize(new Dimension(500, 0));
+        leftPanel.setPreferredSize(new Dimension(540, 0));
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBackground(Color.WHITE);
         leftPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
@@ -158,7 +158,7 @@ public class LoginView extends JPanel {
             // Loading dialog başlat
             Container topLevel = this.getTopLevelAncestor();
             Frame parentFrame = topLevel instanceof Frame ? (Frame) topLevel : null;
-            LoadingDialog loading = new LoadingDialog(parentFrame, "Giriş yapılıyor, lütfen bekleyin...");
+            CircularProgressIndicator loading = new CircularProgressIndicator(parentFrame, "Giriş yapılıyor, lütfen bekleyin...");
 
             SwingWorker<User, Void> worker = new SwingWorker<>() {
                 @Override
@@ -213,6 +213,7 @@ public class LoginView extends JPanel {
                 }
             };
             worker.execute();
+            loading.setVisible(true);
         });
         cardPanel.add(signInBtn);
 

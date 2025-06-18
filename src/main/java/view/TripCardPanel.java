@@ -6,6 +6,7 @@ import models.Voyage;
 import models.User;
 import services.DatabaseService;
 import java.net.URL;
+import commands.DeleteVoyageCommand;
 
     // TripCardPanel: Modern card for a trip
     public class TripCardPanel extends JPanel {
@@ -24,9 +25,18 @@ import java.net.URL;
         private JFrame mainFrame;
         private MainView mainView;
         private JPanel reservationsPanel;
-
-        // Custom EmojiLabel class for better emoji rendering
-      
+        private static ImageIcon STOPWATCH_ICON, WIFI_ICON, TOILET_ICON, DINNER_ICON;
+        static {
+            try {
+                int iconSize = 24;
+                STOPWATCH_ICON = new ImageIcon(new ImageIcon(new URL("https://img.icons8.com/material-outlined/24/stopwatch.png")).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
+                WIFI_ICON = new ImageIcon(new ImageIcon(new URL("https://img.icons8.com/ios-glyphs/30/wifi-logo.png")).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
+                TOILET_ICON = new ImageIcon(new ImageIcon(new URL("https://img.icons8.com/metro/26/toilet-bowl.png")).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
+                DINNER_ICON = new ImageIcon(new ImageIcon(new URL("https://img.icons8.com/fluency-systems-regular/48/dinner-time.png")).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
+            } catch (Exception e) {
+                // fallback: null
+            }
+        }
 
         public TripCardPanel(Voyage trip, Customer customer, MainView mainView, JPanel reservationsPanel) {
             this.customer = customer;
@@ -151,7 +161,7 @@ import java.net.URL;
             editButton.setBorderPainted(false);
             editButton.setContentAreaFilled(false);
             editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            editButton.setToolTipText("Düzenle");
+            editButton.setToolTipText("Edit");
             editButton.addActionListener(e -> {
                 System.out.println("\n=== Edit Button Clicked ===");
                 if (mainView.isAdmin()) {
@@ -166,7 +176,7 @@ import java.net.URL;
                         System.out.println("7. Current user type: " + (currentUser != null ? currentUser.getClass().getName() : "null"));
                         
                         System.out.println("8. Creating EditVoyagePanel");
-                        EditVoyagePanel editPanel = new EditVoyagePanel(currentUser, trip, aoopFrame);
+                        EditVoyagePanel editPanel = new EditVoyagePanel(currentUser, trip, aoopFrame, mainView);
                         System.out.println("9. Showing EditVoyagePanel");
                         aoopFrame.showMainView(editPanel);
                     } else {
@@ -188,11 +198,12 @@ import java.net.URL;
             deleteButton.setBorderPainted(false);
             deleteButton.setContentAreaFilled(false);
             deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            deleteButton.setToolTipText("Sil");
+            deleteButton.setToolTipText("Delete");
             deleteButton.addActionListener(e -> {
                 int result = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this expedition?", "Accept", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                 if (result == JOptionPane.YES_OPTION) {
-                    DatabaseService.deleteVoyageFromDB(trip.getVoyageId());
+                    DeleteVoyageCommand deleteCmd = new DeleteVoyageCommand(trip, (services.Admin)mainView.getUser());
+                    mainView.getCommandCaller().executeCommand(deleteCmd);
                     Container parent = this.getParent();
                     if (parent != null) {
                         parent.remove(this);
@@ -293,28 +304,10 @@ import java.net.URL;
         private JPanel createIconsPanel() {
             JPanel iconsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
             iconsPanel.setOpaque(false);
-            try {
-                int iconSize = 24;
-                java.net.URL stopwatchUrl = new java.net.URI("https://img.icons8.com/material-outlined/24/stopwatch.png").toURL();
-                java.net.URL wifiUrl = new java.net.URI("https://img.icons8.com/ios-glyphs/30/wifi-logo.png").toURL();
-                java.net.URL toiletUrl = new java.net.URI("https://img.icons8.com/metro/26/toilet-bowl.png").toURL();
-                java.net.URL dinnerUrl = new java.net.URI("https://img.icons8.com/fluency-systems-regular/48/dinner-time.png").toURL();
-                JLabel stopwatchIcon = new JLabel(new ImageIcon(new ImageIcon(stopwatchUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
-                JLabel wifiIcon = new JLabel(new ImageIcon(new ImageIcon(wifiUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
-                JLabel toiletIcon = new JLabel(new ImageIcon(new ImageIcon(toiletUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
-                JLabel dinnerIcon = new JLabel(new ImageIcon(new ImageIcon(dinnerUrl).getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
-                Dimension iconDim = new Dimension(32, 32);
-                stopwatchIcon.setPreferredSize(iconDim);
-                wifiIcon.setPreferredSize(iconDim);
-                toiletIcon.setPreferredSize(iconDim);
-                dinnerIcon.setPreferredSize(iconDim);
-                iconsPanel.add(stopwatchIcon);
-                iconsPanel.add(wifiIcon);
-                iconsPanel.add(toiletIcon);
-                iconsPanel.add(dinnerIcon);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            iconsPanel.add(new JLabel(STOPWATCH_ICON));
+            iconsPanel.add(new JLabel(WIFI_ICON));
+            iconsPanel.add(new JLabel(TOILET_ICON));
+            iconsPanel.add(new JLabel(DINNER_ICON));
             return iconsPanel;
         }
         private JLabel createRouteLabel() {

@@ -53,10 +53,7 @@ public class Admin extends User implements Subject{
         return observers;
     }
     
-   
- 
-    
-    
+     
     public void register(String id, String adminCode, String name, String email, String password) {
         System.out.println("\n=== Admin Kaydı Başlıyor ===");
         System.out.println("Admin Kodu: " + adminCode);
@@ -87,19 +84,13 @@ public class Admin extends User implements Subject{
         System.out.println("Admin ID: " + getId());
         System.out.println("Observer sayısı: " + observers.size());
         
-        // 1. Veritabanına kaydet
-        int dbVoyageId = DatabaseService.addVoyage(type, firm, origin, destination, startTime, arrivalTime, seatCount, price, seatArrangement);
-        System.out.println("Sefer veritabanına kaydedildi. ID: " + dbVoyageId);
-
-        // 2. Komut deseni ile de işlemi gerçekleştir
+        // Create voyage using factory
         Voyage voyage = VoyageFactory.createVoyage(voyageId, type, firm, origin, destination, startTime, arrivalTime, seatCount, price, seatArrangement);
+        
+        // Use command pattern to add voyage
         AddVoyageCommand addVoyage = new AddVoyageCommand(voyage, this);
         commandCaller.executeCommand(addVoyage);
         System.out.println("Sefer komut deseni ile eklendi");
-        
-        // 3. Observer pattern ile bildirimleri gönder
-        System.out.println("Bildirimler gönderiliyor...");
-        notifyObservers(voyage);
         
         System.out.println("=== Yeni Sefer Ekleme Tamamlandı ===\n");
     }
@@ -156,5 +147,9 @@ public class Admin extends User implements Subject{
             return instance;
         }
         return null;
+    }
+
+    public CommandCaller getCommandCaller() {
+        return commandCaller;
     }
 }

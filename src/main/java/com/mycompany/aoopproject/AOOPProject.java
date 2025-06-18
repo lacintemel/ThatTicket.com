@@ -5,9 +5,6 @@ import javax.swing.*;
 import services.DatabaseService;
 import view.LoginView;
 import view.RegisterView;
-import view.AdminVoyagePanel;
-import services.Admin;
-import models.Customer;
 
 import java.awt.*;
 
@@ -69,19 +66,6 @@ public class AOOPProject extends JFrame {
         revalidate();
         repaint();
         System.out.println("showMainView completed"); // Debug message
-    }
-
-    // ADMIN PANEL FONKSİYONU
-    public void showAdminPanel(Admin admin, boolean isBusMode) {
-        Customer customer = new Customer(admin.getId(), admin.getName(), "", admin.getEmail(), admin.getPassword());
-        customer.setUser_type("Admin");
-        AdminVoyagePanel adminPanel = new AdminVoyagePanel(admin, customer, this);
-        adminPanel.setTransportMode(isBusMode);
-        remove(currentPanel); // Mevcut paneli kaldır
-        currentPanel = adminPanel; // adminPanel'i yeni panel olarak ayarla
-        add(currentPanel, BorderLayout.CENTER); // Yeni paneli frame'e ekle
-        revalidate();
-        repaint();
     }
 
     public static void main(String[] args) {

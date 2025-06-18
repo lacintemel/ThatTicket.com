@@ -136,7 +136,7 @@ public class PaymentDialog extends JDialog {
         payButton.setPreferredSize(new Dimension(120, 38));
         payButton.addActionListener(e -> {
             // Loading dialog'u göster
-            LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(this), "Ödeme işlemi gerçekleştiriliyor...");
+            CircularProgressIndicator loadingDialog = new CircularProgressIndicator((Frame) SwingUtilities.getWindowAncestor(this), "Ödeme işlemi gerçekleştiriliyor...");
             
             // Ödeme işlemini arka planda yap
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
@@ -154,10 +154,11 @@ public class PaymentDialog extends JDialog {
                         }
                         
                         // Başarılı rezervasyon bildirimi ekle
-                        DatabaseService.addNotification(
-                            Integer.parseInt(customer.getId()),
-                            "Rezervasyonunuz başarıyla tamamlandı!"
-                        );
+                        models.Voyage voyage = models.Voyage.getVoyageHashMap().get(voyageId);
+                        // Call makeReservation for each selected seat through the Customer object
+                        for (view.SeatSelectionPanel.SelectedSeat seat : selectedSeats) {
+                            customer.makeReservation(voyage, seat.seatNum);
+                        }
                         
                         return null;
                     } catch (Exception ex) {

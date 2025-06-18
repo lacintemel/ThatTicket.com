@@ -4,16 +4,18 @@ import javax.swing.*;
 import java.awt.*;
 import models.Voyage;
 import models.User;
-import services.DatabaseService;
 import com.mycompany.aoopproject.AOOPProject;
 import com.toedter.calendar.JDateChooser;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import commands.CommandCaller;
+import commands.UpdateVoyageCommand;
 
 public class EditVoyagePanel extends JPanel {
     private final User user;
     private final Voyage voyage;
     private final JFrame mainFrame;
+    private final MainView mainView;
     private JTextField firmField;
     private JComboBox<String> originCombo;
     private JComboBox<String> destCombo;
@@ -25,10 +27,11 @@ public class EditVoyagePanel extends JPanel {
     private JTextField seatCountField;
     private JComboBox<String> seatArrangementCombo;
 
-    public EditVoyagePanel(User user, Voyage voyage, JFrame mainFrame) {
+    public EditVoyagePanel(User user, Voyage voyage, JFrame mainFrame, MainView mainView) {
         this.user = user;
         this.voyage = voyage;
         this.mainFrame = mainFrame;
+        this.mainView = mainView;
         
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
@@ -41,6 +44,12 @@ public class EditVoyagePanel extends JPanel {
         JLabel titleLabel = new JLabel("Edit Trip", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         topPanel.add(titleLabel, BorderLayout.CENTER);
+
+        // Sol tarafta boşluk bırakmak için boş panel
+        JPanel leftSpacerPanel = new JPanel();
+        leftSpacerPanel.setOpaque(false);
+        leftSpacerPanel.setPreferredSize(new Dimension(190, 0)); // Yaklaşık sağ panel genişliği kadar (backButton 170 + FlowLayout 20)
+        topPanel.add(leftSpacerPanel, BorderLayout.WEST);
 
         JButton backButton = new JButton("🏠 Ana Sayfa") {
             @Override
@@ -62,9 +71,10 @@ public class EditVoyagePanel extends JPanel {
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.setPreferredSize(new Dimension(170, 36));
         backButton.addActionListener(e -> {
-            if (mainFrame instanceof AOOPProject) {
-                ((AOOPProject) mainFrame).showMainView(new MainView(user, voyage.getType().equalsIgnoreCase("Bus"), (AOOPProject)mainFrame));
-            }
+            mainView.updateTripList();
+            mainFrame.setContentPane(mainView);
+            mainFrame.revalidate();
+            mainFrame.repaint();
         });
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
@@ -182,7 +192,10 @@ public class EditVoyagePanel extends JPanel {
                 voyage.setArrivalTime(arrivalTime);
                 voyage.setPrice(Double.parseDouble(priceField.getText()));
                 
-                DatabaseService.updateVoyageInDB(voyage);
+                // Komut ile güncelle
+                CommandCaller commandCaller = new CommandCaller();
+                UpdateVoyageCommand updateCmd = new UpdateVoyageCommand(voyage, (services.Admin)user, voyage.getVoyageId());
+                commandCaller.executeCommand(updateCmd);
                 
                 JOptionPane.showMessageDialog(this, "Trip updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 if (mainFrame instanceof AOOPProject) {

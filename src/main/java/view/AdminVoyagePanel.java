@@ -4,17 +4,14 @@ import services.Admin;
 import javax.swing.*;
 import java.awt.*;
 import commands.AddVoyageCommand;
-import commands.CommandCaller;
 import models.Voyage;
 import com.mycompany.aoopproject.AOOPProject;
-import models.Customer;
 import factorys.VoyageFactory;
 import com.toedter.calendar.JDateChooser;
 import java.text.SimpleDateFormat;
 
 public class AdminVoyagePanel extends JPanel {
     private Admin admin;
-    private Customer customer;
     private JFrame mainFrame;
     private JComboBox<String> typeCombo;
     private JTextField firmField;
@@ -47,15 +44,17 @@ public class AdminVoyagePanel extends JPanel {
     private JLabel seatCountLabel;
     private JLabel priceLabel;
 
-    public AdminVoyagePanel(Admin admin, Customer customer, JFrame mainFrame) {
-        this(admin, customer, mainFrame, null); // Yeni sefer oluşturma
+    private MainView mainView;
+
+    public AdminVoyagePanel(Admin admin, JFrame mainFrame, MainView mainView) {
+        this(admin, mainFrame, null, mainView);
     }
 
-    public AdminVoyagePanel(Admin admin, Customer customer, JFrame mainFrame, Voyage voyageToUpdate) {
+    public AdminVoyagePanel(Admin admin, JFrame mainFrame, Voyage voyageToUpdate, MainView mainView) {
         this.admin = admin;
-        this.customer = customer;
         this.mainFrame = mainFrame;
         this.voyageToUpdate = voyageToUpdate;
+        this.mainView = mainView;
 
         // Define turkishCities here so it's available for JComboBox initialization
         String[] turkishCities = {
@@ -155,7 +154,7 @@ public class AdminVoyagePanel extends JPanel {
                     seatArrangementCombo.setSelectedItem("3+3");
                     seatArrangementCombo.setEnabled(false);
                     if (saveButton != null) {
-                        saveButton.setText(voyageToUpdate == null ? "✈ Sefer Oluştur" : "✈ Güncelle");
+                        saveButton.setText(voyageToUpdate == null ? "✈ Create Voyage" : "✈ Update");
                     }
                 } else {
                     seatArrangementCombo.removeAllItems();
@@ -164,7 +163,7 @@ public class AdminVoyagePanel extends JPanel {
                     seatArrangementCombo.setSelectedItem("2+1");
                     seatArrangementCombo.setEnabled(true);
                     if (saveButton != null) {
-                        saveButton.setText(voyageToUpdate == null ? "🚌 Sefer Oluştur" : "🚌 Güncelle");
+                        saveButton.setText(voyageToUpdate == null ? "🚌 Create Voyage" : "🚌 Update");
                     }
                 }
             }
@@ -182,14 +181,20 @@ public class AdminVoyagePanel extends JPanel {
         topPanel.setOpaque(false);
         
         // Başlık
-        titleLabel = new JLabel(voyageToUpdate == null ? "Yeni Sefer Oluştur" : "Sefer Güncelle", SwingConstants.CENTER);
+        titleLabel = new JLabel(voyageToUpdate == null ? "Create New Voyage" : "Voyage Update", SwingConstants.CENTER);
         titleLabel.setFont(titleFont);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         topPanel.add(titleLabel, BorderLayout.CENTER);
         
+        // Sol tarafta boşluk bırakmak için boş panel
+        JPanel leftSpacerPanel = new JPanel();
+        leftSpacerPanel.setOpaque(false);
+        leftSpacerPanel.setPreferredSize(new Dimension(190, 0)); // Yaklaşık sağ panel genişliği kadar
+        topPanel.add(leftSpacerPanel, BorderLayout.WEST);
+        
         // Sağ üstte uygulamaya dön butonu
-        backButton = new JButton("🏠 Ana Sayfa") {
+        backButton = new JButton("🏠 Main Page") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -209,10 +214,11 @@ public class AdminVoyagePanel extends JPanel {
         backButton.setPreferredSize(new Dimension(170, 36));
         backButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12)); // Added vertical padding
         backButton.addActionListener(e -> {
+            System.out.println("Admin object class in AdminVoyagePanel: " + admin.getClass().getName()); // DEBUG
             if (mainFrame instanceof AOOPProject) {
-                MainView mainView = new MainView(admin, isBusMode, mainFrame);
-                mainView.setVisible(true);
-                ((AOOPProject) mainFrame).showMainView(mainView);
+                MainView mv = new MainView(admin, isBusMode, mainFrame);
+                mv.setVisible(true);
+                ((AOOPProject) mainFrame).showMainView(mv);
             }
         });
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10)); // Added horizontal and vertical gaps
@@ -332,7 +338,7 @@ public class AdminVoyagePanel extends JPanel {
         }
 
         // Kaydet butonu
-        saveButton = new JButton(voyageToUpdate == null ? "✈ Sefer Oluştur" : "✈ Güncelle") {
+        saveButton = new JButton(voyageToUpdate == null ? "✈ Create Voyage" : "✈ Update") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -378,30 +384,31 @@ public class AdminVoyagePanel extends JPanel {
 
             // Validasyon
             if (origin.equals("Select City") || destination.equals("Select City")) {
-                JOptionPane.showMessageDialog(this, "Lütfen kalkış ve varış şehirlerini seçin!", "Hata", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please select departure and arrival cities!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (origin.equals(destination)) {
-                JOptionPane.showMessageDialog(this, "Kalkış ve varış şehirleri aynı olamaz!", "Hata", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Departure and arrival cities cannot be the same!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (startDateChooser.getDate() == null || arrivalDateChooser.getDate() == null || 
                 startTimeSpinner.getValue() == null || arrivalTimeSpinner.getValue() == null ||
                 price <= 0) {
-                JOptionPane.showMessageDialog(this, "Lütfen gerekli alanları doldurun!", "Hata", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please fill in all required fields!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (type.equals("Bus") && firm.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Lütfen firma adını girin!", "Hata", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please enter the company name!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (voyageToUpdate == null) {
-                // Yeni sefer oluştur
-                int newVoyageId = services.DatabaseService.addVoyage(
+                // Create a new voyage using AddVoyageCommand
+                Voyage newVoyage = VoyageFactory.createVoyage(
+                    -1, // Temporary ID, will be set by the command
                     type,
                     firm,
                     origin,
@@ -412,58 +419,22 @@ public class AdminVoyagePanel extends JPanel {
                     price,
                     seatArrangement
                 );
-                
-                if (newVoyageId != -1) {
-                    try {
-                        Voyage newVoyage = VoyageFactory.createVoyage(
-                            newVoyageId,
-                            type,
-                            firm,
-                            origin,
-                            destination,
-                            startTime,
-                            arrivalTime,
-                            seatCount,
-                            price,
-                            seatArrangement
-                        );
-                        
-                        if (newVoyage != null) {
-                            AddVoyageCommand addCmd = new AddVoyageCommand(newVoyage, admin);
-                            CommandCaller caller = new CommandCaller();
-                            caller.executeCommand(addCmd);
-                            
-                            // Show success message
-                            JOptionPane.showMessageDialog(this, 
-                                "Sefer başarıyla eklendi!", 
-                                "Succssful", 
-                                JOptionPane.INFORMATION_MESSAGE);
-                                
-                            // Ana ekrana dön
-                            if (mainFrame instanceof AOOPProject) {
-                                ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(this, 
-                                "Sefer oluşturulurken bir hata oluştu!", 
-                                "Error", 
-                                JOptionPane.ERROR_MESSAGE);
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        JOptionPane.showMessageDialog(this, 
-                            "Sefer eklendi fakat arayüz güncellenirken bir hata oluştu. Lütfen ana sayfaya dönüp seferleri kontrol edin.", 
-                            "Uyarı", 
-                            JOptionPane.WARNING_MESSAGE);
-                        if (mainFrame instanceof AOOPProject) {
-                            ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
-                        }
-                    }
+                AddVoyageCommand addCmd = new AddVoyageCommand(newVoyage, (services.Admin)mainView.getUser());
+                mainView.getCommandCaller().executeCommand(addCmd);
+                if (newVoyage != null) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Trip added successfully!", 
+                        "Success", 
+                        JOptionPane.INFORMATION_MESSAGE);
+                    mainView.updateTripList();
+                    mainFrame.setContentPane(mainView);
+                    mainFrame.revalidate();
+                    mainFrame.repaint();
                 } else {
-                    // Ana ekrana dön
-                    if (mainFrame instanceof AOOPProject) {
-                        ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
-                    }
+                    JOptionPane.showMessageDialog(this, 
+                        "An error occurred while creating the trip!", 
+                        "Error", 
+                        JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 // Mevcut seferi güncelle
@@ -483,19 +454,19 @@ public class AdminVoyagePanel extends JPanel {
                     
                     // Show success message
                     JOptionPane.showMessageDialog(this, 
-                        "Sefer başarıyla güncellendi!", 
-                        "Başarılı", 
+                        "Trip updated successfully!", 
+                        "Success", 
                         JOptionPane.INFORMATION_MESSAGE);
                         
                     // Ana ekrana dön
                     if (mainFrame instanceof AOOPProject) {
-                        ((AOOPProject) mainFrame).showMainView(new MainView(customer, true, mainFrame));
+                        ((AOOPProject) mainFrame).showMainView(new MainView(admin, isBusMode, mainFrame));
                     }
                 } catch (Exception ex2) {
                     ex2.printStackTrace();
                     JOptionPane.showMessageDialog(this, 
-                        "Sefer güncellenirken bir hata oluştu!", 
-                        "Hata", 
+                        "An error occurred while updating the trip!", 
+                        "Error", 
                         JOptionPane.ERROR_MESSAGE);
                 }
             }

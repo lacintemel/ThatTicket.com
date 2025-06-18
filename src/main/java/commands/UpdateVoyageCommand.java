@@ -24,16 +24,33 @@ public class UpdateVoyageCommand implements Command{
 
     @Override
     public void execute() {
-        oldVoyage = Voyage.getVoyageHashMap().get(id);
+        System.out.println("[UpdateVoyageCommand.execute] Çalıştı! Yeni voyageId=" + voyage.getVoyageId() + ", eski id=" + id);
+        Voyage old = Voyage.getVoyageHashMap().get(id);
+        oldVoyage = new Voyage(
+            old.getVoyageId(),
+            old.getType(),
+            old.getFirm(),
+            old.getOrigin(),
+            old.getDestination(),
+            old.getStartTime(),
+            old.getArrivalTime(),
+            old.getSeatCount(),
+            old.getPrice(),
+            old.getSeatArrangement()
+        );
+        System.out.println("[UpdateVoyageCommand.execute] oldVoyage=" + oldVoyage);
         Voyage.getVoyageHashMap().remove(id);
-        Voyage.getVoyageHashMap().put(voyage.getId(), voyage);
+        Voyage.getVoyageHashMap().put(voyage.getVoyageId(), voyage);
+        services.DatabaseService.updateVoyageInDB(voyage);
         admin.notifyObservers(voyage);
     }
 
     @Override
     public void undo() {
-        Voyage.getVoyageHashMap().remove(voyage.getId());
+        System.out.println("[UpdateVoyageCommand.undo] çalıştı! oldVoyage=" + oldVoyage);
+        Voyage.getVoyageHashMap().remove(voyage.getVoyageId());
         Voyage.getVoyageHashMap().put(id, oldVoyage);
+        services.DatabaseService.updateVoyageInDB(oldVoyage);
         admin.notifyObservers(oldVoyage);
     }
 }

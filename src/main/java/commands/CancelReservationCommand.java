@@ -1,13 +1,10 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package commands;
 
 import java.util.ArrayList;
 import models.Customer;
 import models.Seat;
 import models.Voyage;
+import services.DatabaseService;
 
 /**
  *
@@ -19,41 +16,58 @@ public class CancelReservationCommand implements Command{
     private Voyage voyage;
     private final int seatNumber;
     private ArrayList<Seat> customerSeats;
+    private String gender;
+    private boolean isAdmin = false;
+    private int userIdFromDb = -1;
 
-    public CancelReservationCommand(Customer customer, Voyage voyage, int seatNumber) {
-        if (customer == null) {
+    public CancelReservationCommand(Customer customer, Voyage voyage, int seatNumber, String gender, boolean isAdmin) {
+        if (!isAdmin && customer == null) {
             throw new IllegalArgumentException("Customer cannot be null");
         }
         this.customer = customer;
         this.voyage = voyage;
         this.seatNumber = seatNumber;
-        this.customerSeats = customer.getCustomersVoyageHashMap().get(voyage);
+        this.gender = gender;
+        this.isAdmin = isAdmin;
     }
 
     @Override
     public void execute() {
-        Seat seat = Voyage.getVoyageHashMap().get(this.voyage.getVoyageId()).getSeats().get(seatNumber - 1);
-        seat.emptySeat();
-        customerSeats.remove(seat);
-        if(customerSeats.size() == 0){
-            customer.getCustomersVoyageHashMap().remove(voyage);
+        System.out.println("[CancelReservationCommand.execute] userId=" + (customer != null ? customer.getId() : "null") + ", voyageId=" + voyage.getVoyageId() + ", seatNumber=" + seatNumber + ", gender=" + gender + ", isAdmin=" + isAdmin);
+        if (isAdmin) {
+            // 1. Önce bilgileri çek
+            try {
+                java.sql.Connection conn = services.DatabaseService.getConnection();
+                String sql = "SELECT user_id, gender FROM reservations WHERE voyage_id = ? AND seat_number = ?";
+                try (java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setInt(1, voyage.getVoyageId());
+                    pstmt.setInt(2, seatNumber);
+                    java.sql.ResultSet rs = pstmt.executeQuery();
+                    if (rs.next()) {
+                        userIdFromDb = rs.getInt("user_id");
+                        gender = rs.getString("gender");
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Admin reservation info fetch failed: " + e.getMessage());
+            }
+            // 2. Sonra sil
+            services.DatabaseService.deleteReservationByVoyageAndSeat(voyage.getVoyageId(), seatNumber);
+            return;
         }
+        DatabaseService.deleteReservation(Integer.parseInt(customer.getId()), voyage.getVoyageId(), seatNumber);
     }
     
 
     @Override
-    public void undo() {        
-        Seat seat = voyage.getSeats().get(seatNumber - 1);
-        seat.sellSeat(customer);
-        if (customer.getCustomersVoyageHashMap().containsKey(voyage)){
-            customerSeats.add(seat);
+    public void undo() {
+        System.out.println("[CancelReservationCommand.undo] userId=" + (customer != null ? customer.getId() : "null") + ", voyageId=" + voyage.getVoyageId() + ", seatNumber=" + seatNumber + ", gender=" + gender + ", isAdmin=" + isAdmin);
+        if (isAdmin) {
+            if (userIdFromDb != -1 && gender != null) {
+                services.DatabaseService.addReservation(userIdFromDb, voyage.getVoyageId(), seatNumber, gender);
+            }
+            return;
         }
-        else{
-            ArrayList<Seat> seats = new ArrayList<>();
-            seats.add(seat);
-            customer.getCustomersVoyageHashMap().put(voyage, seats);
-        }
+        DatabaseService.addReservation(Integer.parseInt(customer.getId()), voyage.getVoyageId(), seatNumber, gender);
     }
-    
-    
 }

@@ -74,11 +74,6 @@ public class SeatSelectionPanel extends JPanel {
                 seatIcon = null;
             }
         }
-
-        JLabel title = new JLabel("Koltuk Seçimi", SwingConstants.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 22));
-        add(title, BorderLayout.NORTH);
-
         // Koltuk grid paneli
         seatGridPanel = new JPanel();
         seatGridPanel.setOpaque(false);
@@ -96,9 +91,9 @@ public class SeatSelectionPanel extends JPanel {
         // Seçili koltuklar ve toplam fiyat
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         infoPanel.setOpaque(false);
-        selectedSeatsLabel = new JLabel("Seçili Koltuk: -");
+        selectedSeatsLabel = new JLabel("Selected Seat: -");
         selectedSeatsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        totalPriceLabel = new JLabel("Toplam: 0 TL");
+        totalPriceLabel = new JLabel("Total: 0 TL");
         totalPriceLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         infoPanel.add(selectedSeatsLabel);
         infoPanel.add(Box.createHorizontalStrut(20));
@@ -139,10 +134,10 @@ public class SeatSelectionPanel extends JPanel {
                         for (Component rowComp : rowPanel.getComponents()) {
                             if (rowComp instanceof JButton) {
                                 JButton btn = (JButton) rowComp;
-                                if (!btn.getText().equals("DOLU")) {
+                                if (!btn.getText().equals("Full")) {
                                     btn.setBackground(new Color(52, 152, 219));
                                     btn.setText("");
-                                    btn.setToolTipText("Boş");
+                                    btn.setToolTipText("Empty");
                                 }
                             }
                         }
@@ -150,8 +145,8 @@ public class SeatSelectionPanel extends JPanel {
                 }
                 
                 // Etiketleri sıfırla
-                selectedSeatsLabel.setText("Seçili Koltuk: -");
-                totalPriceLabel.setText("Toplam: 0 TL");
+                selectedSeatsLabel.setText("Selected Seat: -");
+                totalPriceLabel.setText("Total: 0 TL");
                 
                 // Rezervasyon butonunu devre dışı bırak
                 reserveButton.setEnabled(false);
@@ -177,7 +172,7 @@ public class SeatSelectionPanel extends JPanel {
         });
 
         // Rezervasyon butonu
-        reserveButton = new JButton("Rezervasyon Yap") {
+        reserveButton = new JButton("Make Reservation") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -197,7 +192,7 @@ public class SeatSelectionPanel extends JPanel {
         reserveButton.setBorderPainted(false);
         reserveButton.setFocusPainted(false);
         reserveButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        reserveButton.setPreferredSize(new Dimension(150, 38));
+        reserveButton.setPreferredSize(new Dimension(250, 38));
         reserveButton.setEnabled(false);
         reserveButton.addActionListener(e -> {
             // Admin ise veya müşteri null ise hata ver
@@ -256,7 +251,7 @@ public class SeatSelectionPanel extends JPanel {
                     // Çıkış satırı: sadece boşluk ve çıkış etiketi
                     rowPanel.add(Box.createHorizontalStrut(48));
                     rowPanel.add(Box.createHorizontalStrut(32));
-                    JLabel exitLabel = new JLabel("ÇIKIŞ");
+                    JLabel exitLabel = new JLabel("Exit");
                     exitLabel.setFont(new Font("Arial", Font.BOLD, 16));
                     exitLabel.setForeground(Color.RED);
                     rowPanel.add(exitLabel);
@@ -298,7 +293,7 @@ public class SeatSelectionPanel extends JPanel {
                     // Çıkış satırı: sadece boşluk ve çıkış etiketi
                     rowPanel.add(Box.createHorizontalStrut(48+6));
                     rowPanel.add(Box.createHorizontalStrut(32));
-                    JLabel exitLabel = new JLabel("ÇIKIŞ");
+                    JLabel exitLabel = new JLabel("Exit");
                     exitLabel.setFont(new Font("Arial", Font.BOLD, 16));
                     exitLabel.setForeground(Color.RED);
                     rowPanel.add(exitLabel);
@@ -340,7 +335,7 @@ public class SeatSelectionPanel extends JPanel {
                     // Çıkış satırı: sadece boşluk ve çıkış etiketi
                     rowPanel.add(Box.createHorizontalStrut(48*3+6*2));
                     rowPanel.add(Box.createHorizontalStrut(40));
-                    JLabel exitLabel = new JLabel("ÇIKIŞ");
+                    JLabel exitLabel = new JLabel("Exit");
                     exitLabel.setFont(new Font("Arial", Font.BOLD, 16));
                     exitLabel.setForeground(Color.RED);
                     rowPanel.add(exitLabel);
@@ -364,21 +359,21 @@ public class SeatSelectionPanel extends JPanel {
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         if (isReserved) {
-            if ("Kadın".equals(gender)) {
+            if ("Woman".equals(gender)) {
                 btn.setBackground(new Color(255, 105, 180)); // PEMBE
-            } else if ("Erkek".equals(gender)) {
+            } else if ("Man".equals(gender)) {
                 btn.setBackground(new Color(52, 152, 219)); // MAVİ
             } else {
                 btn.setBackground(new Color(220, 53, 69)); // Kırmızı (bilinmiyorsa)
             }
             btn.setForeground(Color.WHITE);
-            btn.setText("DOLU");
-            btn.setToolTipText("Dolu");
+            btn.setText("Full");
+            btn.setToolTipText("Full");
             btn.setEnabled(false);
         } else {
             btn.setForeground(Color.WHITE);
             btn.setText("");
-            btn.setToolTipText("Boş");
+            btn.setToolTipText("Empty");
             btn.addActionListener(e -> {
                 handleSeatClick(btn, seatNum);
             });
@@ -399,7 +394,7 @@ public class SeatSelectionPanel extends JPanel {
                     g2.setFont(new Font("Arial", Font.BOLD, 16));
                     g2.setColor(Color.WHITE);
                     FontMetrics fm = g2.getFontMetrics();
-                    String text = "DOLU";
+                    String text = "Full";
                     int x = (c.getWidth() - fm.stringWidth(text)) / 2;
                     int y = (c.getHeight() + fm.getAscent() - fm.getDescent()) / 2;
                     g2.drawString(text, x, y);
@@ -428,7 +423,7 @@ public class SeatSelectionPanel extends JPanel {
             // Koltuk zaten seçili, seçimi kaldır
             selectedSeats.removeIf(s -> s.seatNum == seatNum);
             btn.setBackground(new Color(52, 152, 219));
-            btn.setToolTipText("Boş");
+            btn.setToolTipText("Empty");
             return;
         }
 
@@ -486,7 +481,7 @@ public class SeatSelectionPanel extends JPanel {
         }
         int genderChoice = JOptionPane.showOptionDialog(
             btn,
-            allowedGender == null ? "Lütfen cinsiyet seçiniz:" : ("Yan koltukta cinsiyet kuralı: Sadece " + allowedGender + " seçebilirsiniz."),
+            allowedGender == null ? "Please select gender:" : ("Gender rule for the side seat: You can only select " + allowedGender + "."),
             "Gender Selection",
             JOptionPane.DEFAULT_OPTION,
             JOptionPane.QUESTION_MESSAGE,
@@ -503,8 +498,8 @@ public class SeatSelectionPanel extends JPanel {
         } else {
             btn.setBackground(new Color(52, 152, 219)); // MAVİ
         }
-        btn.setText("SEÇİLDİ");
-        btn.setToolTipText(selectedGender + " seçildi");
+        btn.setText("SELECTED");
+        btn.setToolTipText(selectedGender + " selected");
         updateSelectedSeatsLabel();
         reserveButton.setEnabled(true);
     }

@@ -4,7 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import models.Customer;
 import models.Voyage;
-import services.DatabaseService;
+import commands.CancelReservationCommand;
+import commands.CommandCaller;
 
 public class ReservationCardPanel extends JPanel {
     private final Customer customer;
@@ -18,6 +19,7 @@ public class ReservationCardPanel extends JPanel {
     private JFrame mainFrame;
     private MainView mainView;
     private JLabel userInfoLabel;
+    private CommandCaller commandCaller;
 
     public ReservationCardPanel(Customer customer, Voyage trip, int reservedSeatNumber, String reservedGender, String transportType, ReservationsPanel reservationsPanel, String adminEmail, MainView mainView, String reservationDate) {
         this.customer = customer;
@@ -247,7 +249,7 @@ public class ReservationCardPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setOpaque(false);
         
-        JButton cancelButton = new JButton("İptal Et") {
+        JButton cancelButton = new JButton("Cancel") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g.create();
@@ -268,13 +270,9 @@ public class ReservationCardPanel extends JPanel {
         cancelButton.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(mainFrame, "Rezervasyonunuzu iptal etmek istediğinizden emin misiniz?", "Rezervasyon İptali", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                if (mainView.isAdmin()) {
-                    DatabaseService.deleteReservationByVoyageAndSeat(trip.getVoyageId(), reservedSeatNumber);
-                    JOptionPane.showMessageDialog(mainFrame, "Admin tarafından rezervasyon başarıyla silindi.", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    DatabaseService.deleteReservation(Integer.parseInt(customer.getId()), trip.getVoyageId(), reservedSeatNumber);
-                    JOptionPane.showMessageDialog(mainFrame, "Rezervasyonunuz başarıyla iptal edildi.", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
-                }
+                CancelReservationCommand cmd = new CancelReservationCommand(customer, trip, reservedSeatNumber, reservedGender, mainView.isAdmin());
+                mainView.getCommandCaller().executeCommand(cmd);
+                JOptionPane.showMessageDialog(mainFrame, mainView.isAdmin() ? "Admin tarafından rezervasyon başarıyla iptal edildi." : "Rezervasyonunuz başarıyla iptal edildi.", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
                 if (mainView != null) {
                     mainView.updateReservationsPanel(customer, reservationsPanel);
                 }

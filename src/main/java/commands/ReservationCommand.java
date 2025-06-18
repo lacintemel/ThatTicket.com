@@ -34,30 +34,12 @@ public class ReservationCommand implements Command{
 
     @Override
     public void execute() {
-        Seat seat = voyage.getSeats().get(seatNumber - 1);
-        if (gender != null) {
-            seat.sellSeat(customer, gender);
-        } else {
-        seat.sellSeat(customer);
-        }
-        
-        if (customer.getCustomersVoyageHashMap().containsKey(voyage)) {
-            customerSeats.add(seat);
-        } else {
-            ArrayList<Seat> seats = new ArrayList<>();
-            seats.add(seat);
-            customer.getCustomersVoyageHashMap().put(voyage, seats);
-        }       
+  
     }
 
     @Override
     public void undo() {
-        Seat seat = Voyage.getVoyageHashMap().get(this.voyage.getVoyageId()).getSeats().get(seatNumber - 1);
-        seat.emptySeat();
-        customerSeats.remove(seat);
-        if(customerSeats.size() == 0) {
-            customer.getCustomersVoyageHashMap().remove(voyage);
-        }
+
     }
             
           

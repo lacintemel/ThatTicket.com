@@ -80,7 +80,9 @@ public class ReservationsPanel extends JPanel {
                     res.voyageId,
                     res.seatNumber,
                     res.gender,
-                    res.reservationDate
+                    res.reservationDate,
+                    res.userName,
+                    res.userEmail
                 };
                 reservations.add(reservation);
             }
@@ -91,7 +93,9 @@ public class ReservationsPanel extends JPanel {
                     res.voyageId,
                     res.seatNumber,
                     res.gender,
-                    res.reservationDate
+                    res.reservationDate,
+                    res.userName,
+                    res.userEmail
                 };
                 reservations.add(reservation);
             }
@@ -106,6 +110,8 @@ public class ReservationsPanel extends JPanel {
                 int seatNumber = (int) reservation[1];
                 String gender = (String) reservation[2];
                 String created_at = (String) reservation[3];
+                String userName = isAdmin ? (String) reservation[4] : customer.getName();
+                String userEmail = isAdmin ? (String) reservation[5] : customer.getEmail();
                 
                 Voyage voyage = DatabaseService.getVoyageById(voyageId);
                 if (voyage != null) {
@@ -120,6 +126,9 @@ public class ReservationsPanel extends JPanel {
                         mainView,
                         created_at
                     );
+                    if (isAdmin) {
+                        card.setUserInfo(userName, userEmail);
+                    }
                     reservationsContainer.add(card);
                     reservationsContainer.add(Box.createVerticalStrut(10));
                 }

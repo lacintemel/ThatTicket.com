@@ -18,6 +18,8 @@ import javax.imageio.ImageIO;
 import java.awt.Image;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import commands.CommandCaller;
+import java.util.Map;
 
 public class MainView extends JPanel {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -39,14 +41,27 @@ public class MainView extends JPanel {
     private boolean isAdmin;
     private JPanel notificationsPanel;
     private User user;  // Store the original user object
+    private CommandCaller commandCaller;
+    private CardLayout cardLayout;
+    private Map<String, JPanel> panelCache;
+    private JPanel currentPanel;
+    private List<Voyage> cachedVoyages;
+    private long lastVoyageUpdate;
 
     public MainView(User user, boolean isBusMode, JFrame mainFrame) {
-        this.user = user;  // Store the original user
-        this.customer = (user instanceof Customer) ? (Customer) user : null;
-        this.isAdmin = (user instanceof Admin) || (user instanceof Customer && "Admin".equalsIgnoreCase(((Customer) user).getUser_type()));
+        this.user = user;
         this.isBusMode = isBusMode;
+        this.isAdmin = user instanceof Admin;
         this.mainFrame = mainFrame;
+        this.commandCaller = new CommandCaller();
+        this.cachedVoyages = new ArrayList<>();
+        this.lastVoyageUpdate = 0;
+        
         setLayout(new BorderLayout());
+        initializeUI();
+    }
+
+    private void initializeUI() {
         if (isBusMode) {
             allTrips = new ArrayList<>(DatabaseService.getAllBusVoyages());
         } else {
@@ -228,7 +243,7 @@ public class MainView extends JPanel {
         toggleButton.addActionListener(e -> {
             if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
                 com.mycompany.aoopproject.AOOPProject frame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
-                LoadingDialog loading = new LoadingDialog(frame, "Yükleniyor, lütfen bekleyin...");
+                CircularProgressIndicator loading = new CircularProgressIndicator(frame, "Yükleniyor, lütfen bekleyin...");
                 SwingWorker<Void, Void> worker = new SwingWorker<>() {
                     @Override
                     protected Void doInBackground() {
@@ -557,6 +572,28 @@ public class MainView extends JPanel {
 
         // Admin için "Yeni Sefer Ekle" butonu
         JButton addVoyageBtn = null;
+        
+        JButton backButton = new JButton();
+        try {
+            URL backIconUrl = new URL("https://img.icons8.com/ios/50/left2.png");
+            Image img = ImageIO.read(backIconUrl);
+            Image scaledImg = img.getScaledInstance(28, 28, Image.SCALE_SMOOTH);
+            backButton.setIcon(new ImageIcon(scaledImg));
+        } catch (Exception e) {
+            backButton.setText("←");
+            backButton.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        }
+        backButton.setBorderPainted(false);
+        backButton.setFocusPainted(false);
+        backButton.setContentAreaFilled(false);
+        backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        backButton.setPreferredSize(new Dimension(48, 48));
+        backButton.setToolTipText("Back");
+        backButton.addActionListener(e -> {
+            commandCaller.undoLast();
+            updateTripList();
+        });
+
         if (isAdmin) {
             addVoyageBtn = new JButton("Add New Expedition") {
                 @Override
@@ -582,13 +619,25 @@ public class MainView extends JPanel {
             addVoyageBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
             addVoyageBtn.setPreferredSize(new Dimension(160, 32));
             addVoyageBtn.addActionListener(e -> {
+                System.out.println("User object class: " + user.getClass().getName()); // DEBUG
                 if (mainFrame instanceof com.mycompany.aoopproject.AOOPProject) {
                     com.mycompany.aoopproject.AOOPProject frame = (com.mycompany.aoopproject.AOOPProject) mainFrame;
-                    // Ensure we pass the correct Admin instance
-                    Admin admin = (Admin) user; // Use the 'user' field from MainView constructor
-                    frame.showAdminPanel(admin, isBusMode);
+                    if (user instanceof Admin) {
+                        Admin admin = (Admin) user;
+                        AdminVoyagePanel adminPanel = new AdminVoyagePanel(admin, frame, this);
+                        adminPanel.setTransportMode(isBusMode);
+                        frame.getContentPane().removeAll();
+                        frame.add(adminPanel, BorderLayout.CENTER);
+                        frame.revalidate();
+                        frame.repaint();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "You have no authority.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
+
+            tabbar.add(backButton);
+            tabbar.add(Box.createHorizontalStrut(120));
             tabbar.add(btnTrips);
             tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(addVoyageBtn);
@@ -597,6 +646,7 @@ public class MainView extends JPanel {
             tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(btnNotifications);
         } else {
+  
             tabbar.add(btnTrips);
             tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(btnReservations);
@@ -644,7 +694,8 @@ public class MainView extends JPanel {
         updateTripList();
     }
 
-    private void updateTripList() {
+    public void updateTripList() {
+        // Her zaman eski kartları temizle
         cardListPanel.removeAll();
         noVoyagesLabel.setVisible(false);
         
@@ -667,7 +718,7 @@ public class MainView extends JPanel {
         // Seçilen tarihi formatla
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String formattedDate = dateFormat.format(selectedDate);
-        
+
         // Veritabanından güncel voyage'ları al
         List<Voyage> allTrips;
         if (isBusMode) {
@@ -675,7 +726,11 @@ public class MainView extends JPanel {
         } else {
             allTrips = new ArrayList<>(DatabaseService.getAllFlightVoyages());
         }
-        
+
+        // Update cache
+        cachedVoyages = new ArrayList<>(allTrips);
+        lastVoyageUpdate = System.currentTimeMillis();
+
         boolean hasMatchingTrips = false;
 
         for (Voyage trip : allTrips) {
@@ -694,7 +749,7 @@ public class MainView extends JPanel {
             // Check date
             String tripDate = trip.getStartTime().split(" ")[0]; // Get only the date part
             if (!tripDate.equals(formattedDate)) {
-                        matches = false;
+                matches = false;
             }
 
             if (matches) {
@@ -713,7 +768,7 @@ public class MainView extends JPanel {
             // Mesajı oluştur
             String message = turkishDate + " on ";
             if (!selectedOrigin.equals("Select City") && !selectedDestination.equals("Select City")) {
-            message += selectedOrigin + " - " + selectedDestination + " between ";
+                message += selectedOrigin + " - " + selectedDestination + " between ";
             }
             message += (isBusMode ? "bus" : "plane") + " there is no flight.";
             
@@ -734,10 +789,7 @@ public class MainView extends JPanel {
         cl.show(mainPanel, name);
         if (name.equals("TRIPS")) {
             dynamicTitle.setText(isBusMode ? "Bus Schedules" : "Flight Schedules");
-            // Voyage verilerini yenile
-            Voyage.getVoyageHashMap().clear();
-            DatabaseService.loadAllVoyages();
-            updateTripList();
+            updateTripList(); // Sadece listeyi güncelle, paneli tekrar ekleme
         } else if (name.equals("RESERVATIONS")) {
             dynamicTitle.setText("Rezervations");
             updateReservationsPanel(this.customer, reservationsPanel);
@@ -745,8 +797,6 @@ public class MainView extends JPanel {
             dynamicTitle.setText("Notifications");
             updateNotifications();
         }
-        
-        // Update tabbar button colors
         revalidate();
         repaint();
     }
@@ -759,7 +809,7 @@ public class MainView extends JPanel {
         // Loading göstergesi ekle
         JPanel loadingPanel = new JPanel(new GridBagLayout());
         loadingPanel.setBackground(Color.WHITE);
-        JLabel loadingLabel = new JLabel("Rezervasyonlar yükleniyor...");
+        JLabel loadingLabel = new JLabel("Reservations are loading...");
         loadingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         loadingPanel.add(loadingLabel);
         
@@ -933,10 +983,20 @@ public class MainView extends JPanel {
 
     // Yeni metod: Rezervasyonlar sekmesine geri dönmek için
     public void showReservationsTab() {
-        // Rezervasyonları güncelleyerek içeriğin doğru olduğundan emin ol
+        // Update only if needed
+        if (currentPanel != null && currentPanel.getName().equals("Reservations")) {
+            return;
+        }
         updateReservationsPanel(customer, reservationsPanel);
-        // CardLayout kullanarak rezervasyonlar panelini göster
         CardLayout cl = (CardLayout) mainPanel.getLayout();
         cl.show(mainPanel, "Reservations");
+    }
+
+    public CommandCaller getCommandCaller() {
+        return commandCaller;
+    }
+
+    public void setCommandCaller(CommandCaller commandCaller) {
+        this.commandCaller = commandCaller;
     }
 }

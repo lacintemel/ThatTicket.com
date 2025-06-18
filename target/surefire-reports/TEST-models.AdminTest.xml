@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="models.AdminTest" time="0.011" tests="3" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="models.AdminTest" time="0.012" tests="3" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="TR"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter6192482746815827866.jar /Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire 2025-06-14T16-29-44_189-jvmRun1 surefire17493109156761322463tmp surefire_010663475432653910130tmp"/>
+    <property name="sun.java.command" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter15778184948414028672.jar /Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire 2025-06-18T19-41-08_987-jvmRun1 surefire2482430224646664012tmp surefire_04409206393292331753tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/test-classes:/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/classes:/Users/izzet/.m2/repository/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-nop/2.0.9/slf4j-nop-2.0.9.jar:/Users/izzet/.m2/repository/com/toedter/jcalendar/1.4/jcalendar-1.4.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.8.2/junit-jupiter-api-5.8.2.jar:/Users/izzet/.m2/repository/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-commons/1.8.2/junit-platform-commons-1.8.2.jar:/Users/izzet/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.8.2/junit-jupiter-engine-5.8.2.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-engine/1.8.2/junit-platform-engine-1.8.2.jar:"/>
@@ -29,7 +29,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="apple.awt.application.name" value="ForkedBooter"/>
-    <property name="surefire.real.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter6192482746815827866.jar"/>
+    <property name="surefire.real.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter15778184948414028672.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="21.0.3+9-LTS"/>
@@ -59,6 +59,6 @@
     <property name="java.class.version" value="65.0"/>
   </properties>
   <testcase name="testAdminCreation" classname="models.AdminTest" time="0.009"/>
-  <testcase name="testAdminType" classname="models.AdminTest" time="0"/>
-  <testcase name="testAdminModification" classname="models.AdminTest" time="0.001"/>
+  <testcase name="testAdminType" classname="models.AdminTest" time="0.001"/>
+  <testcase name="testAdminModification" classname="models.AdminTest" time="0"/>
 </testsuite>

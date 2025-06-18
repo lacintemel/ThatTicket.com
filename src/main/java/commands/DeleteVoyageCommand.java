@@ -14,6 +14,7 @@ public class DeleteVoyageCommand implements Command{
     
     Voyage voyage;
     Admin admin;
+    private Voyage deletedVoyage;
     
 
     public DeleteVoyageCommand(Voyage voyage, Admin admin) {
@@ -23,13 +24,18 @@ public class DeleteVoyageCommand implements Command{
 
     @Override
     public void execute() {
-        Voyage.getVoyageHashMap().remove(voyage.getId());
+        deletedVoyage = Voyage.getVoyageHashMap().get(voyage.getVoyageId());
+        Voyage.getVoyageHashMap().remove(voyage.getVoyageId());
+        services.DatabaseService.deleteVoyageFromDB(voyage.getVoyageId()); // DB'den sil
     }
 
     @Override
     public void undo() {
-        Voyage.getVoyageHashMap().put(voyage.getId(), voyage);
-        admin.notifyObservers(voyage);
+        if (deletedVoyage != null) {
+            Voyage.getVoyageHashMap().put(deletedVoyage.getVoyageId(), deletedVoyage);
+            services.DatabaseService.addVoyageToDB(deletedVoyage); // DB'ye geri ekle
+            admin.notifyObservers(deletedVoyage);
+        }
     }
     
 }

@@ -3,7 +3,6 @@ models/Reservation.class
 view/LoginView.class
 com/mycompany/aoopproject/AOOPProject.class
 view/PaymentDialog$4.class
-view/RoundedButton.class
 view/AdminVoyagePanel$1.class
 view/MainView$11.class
 view/MainView$2.class
@@ -12,7 +11,7 @@ view/RegisterView.class
 commands/Command.class
 view/TransportPanel$Cloud.class
 services/Observer.class
-services/Director.class
+view/CircularProgressIndicator.class
 commands/CommandCaller.class
 view/RegisterView$1.class
 services/BusTrip.class
@@ -35,8 +34,8 @@ view/MainView$7.class
 view/ReservationCardPanel$4.class
 view/MainView$13.class
 view/TransportPanel$SmokeParticle.class
-view/LoadingDialog$CircularProgressIndicator.class
 view/SeatSelectionPanel$2.class
+view/CircularProgressIndicator$1.class
 view/TripCardPanel$2.class
 view/ReservationCardPanel.class
 view/TransportPanel$2.class
@@ -76,10 +75,8 @@ view/RegisterView$RoundedButtonModern.class
 factorys/VoyageFactory.class
 view/TransportModeChangeListener.class
 view/LoginView$2.class
-view/LoadingDialog.class
 services/DatabaseService.class
 commands/CancelReservationCommand.class
-view/LoadingDialog$1.class
 view/LoginView$RoundedTextField.class
 view/MainView$4.class
 view/AdminVoyagePanel$2.class
@@ -95,4 +92,5 @@ view/LoginView$RoundedPasswordField.class
 view/EditVoyagePanel$2.class
 view/MainView$3.class
 view/LoginPanel$LoginModeChangeListener.class
+view/CircularProgressIndicator$CircularProgressIndicatorDesign.class
 commands/ReservationCommand.class
