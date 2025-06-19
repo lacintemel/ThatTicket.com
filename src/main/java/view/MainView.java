@@ -660,7 +660,7 @@ public class MainView extends JPanel {
             });
 
             tabbar.add(backButton);
-            tabbar.add(Box.createHorizontalStrut(120));
+            tabbar.add(Box.createHorizontalStrut(160));
             tabbar.add(btnTrips);
             tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(addVoyageBtn);
@@ -670,7 +670,7 @@ public class MainView extends JPanel {
             tabbar.add(btnNotifications);
         } else {
             tabbar.add(backButton);
-            tabbar.add(Box.createHorizontalStrut(120));
+            tabbar.add(Box.createHorizontalStrut(160));
             tabbar.add(btnTrips);
             tabbar.add(Box.createHorizontalStrut(12));
             tabbar.add(btnReservations);
