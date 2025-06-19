@@ -69,10 +69,18 @@ public class AOOPProject extends JFrame {
     }
 
     public static void main(String[] args) {
+        System.out.println("\n=== THATTICKET.COM APPLICATION STARTING ===");
+        System.out.println("Java version: " + System.getProperty("java.version"));
+        System.out.println("OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version"));
+        
         // Veritabanını başlat
         SwingUtilities.invokeLater(() -> {
+            System.out.println("Initializing database...");
             DatabaseService.initialize();
+            System.out.println("Creating main application window...");
             new AOOPProject().setVisible(true);
+            System.out.println("✅ Application started successfully");
+            System.out.println("=== APPLICATION STARTUP COMPLETED ===\n");
         });
     }
 }

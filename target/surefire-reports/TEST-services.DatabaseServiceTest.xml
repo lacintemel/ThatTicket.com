@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="services.DatabaseServiceTest" time="0.301" tests="3" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="services.DatabaseServiceTest" time="0.319" tests="3" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
-    <property name="java.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/test-classes:/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/classes:/Users/izzet/.m2/repository/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-nop/2.0.9/slf4j-nop-2.0.9.jar:/Users/izzet/.m2/repository/com/toedter/jcalendar/1.4/jcalendar-1.4.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.8.2/junit-jupiter-api-5.8.2.jar:/Users/izzet/.m2/repository/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-commons/1.8.2/junit-platform-commons-1.8.2.jar:/Users/izzet/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.8.2/junit-jupiter-engine-5.8.2.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-engine/1.8.2/junit-platform-engine-1.8.2.jar:"/>
+    <property name="java.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/test-classes:/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/classes:/Users/izzet/.m2/repository/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-nop/1.7.36/slf4j-nop-1.7.36.jar:/Users/izzet/.m2/repository/com/toedter/jcalendar/1.4/jcalendar-1.4.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.8.2/junit-jupiter-api-5.8.2.jar:/Users/izzet/.m2/repository/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-commons/1.8.2/junit-platform-commons-1.8.2.jar:/Users/izzet/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.8.2/junit-jupiter-engine-5.8.2.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-engine/1.8.2/junit-platform-engine-1.8.2.jar:"/>
     <property name="java.vm.vendor" value="Eclipse Adoptium"/>
     <property name="sun.arch.data.model" value="64"/>
     <property name="java.vendor.url" value="https://adoptium.net/"/>
@@ -12,10 +12,10 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="TR"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter15778184948414028672.jar /Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire 2025-06-18T19-41-08_987-jvmRun1 surefire2482430224646664012tmp surefire_04409206393292331753tmp"/>
+    <property name="sun.java.command" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter15144388531691184313.jar /Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire 2025-06-19T03-16-40_902-jvmRun1 surefire17157353994917535521tmp surefire_017951753036316988738tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
-    <property name="surefire.test.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/test-classes:/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/classes:/Users/izzet/.m2/repository/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-nop/2.0.9/slf4j-nop-2.0.9.jar:/Users/izzet/.m2/repository/com/toedter/jcalendar/1.4/jcalendar-1.4.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.8.2/junit-jupiter-api-5.8.2.jar:/Users/izzet/.m2/repository/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-commons/1.8.2/junit-platform-commons-1.8.2.jar:/Users/izzet/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.8.2/junit-jupiter-engine-5.8.2.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-engine/1.8.2/junit-platform-engine-1.8.2.jar:"/>
+    <property name="surefire.test.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/test-classes:/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/classes:/Users/izzet/.m2/repository/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:/Users/izzet/.m2/repository/org/slf4j/slf4j-nop/1.7.36/slf4j-nop-1.7.36.jar:/Users/izzet/.m2/repository/com/toedter/jcalendar/1.4/jcalendar-1.4.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.8.2/junit-jupiter-api-5.8.2.jar:/Users/izzet/.m2/repository/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-commons/1.8.2/junit-platform-commons-1.8.2.jar:/Users/izzet/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/izzet/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.8.2/junit-jupiter-engine-5.8.2.jar:/Users/izzet/.m2/repository/org/junit/platform/junit-platform-engine/1.8.2/junit-platform-engine-1.8.2.jar:"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="user.home" value="/Users/izzet"/>
     <property name="user.language" value="en"/>
@@ -29,7 +29,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="apple.awt.application.name" value="ForkedBooter"/>
-    <property name="surefire.real.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter15778184948414028672.jar"/>
+    <property name="surefire.real.class.path" value="/Users/izzet/Ceng Second Class/Second Half/AOOP/Projects/AOOP_Project/ThatTicket.com/target/surefire/surefirebooter15144388531691184313.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="21.0.3+9-LTS"/>
@@ -58,7 +58,7 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="testVoyageCreation" classname="services.DatabaseServiceTest" time="0.286"/>
-  <testcase name="testReservationCreation" classname="services.DatabaseServiceTest" time="0.009"/>
+  <testcase name="testVoyageCreation" classname="services.DatabaseServiceTest" time="0.301"/>
+  <testcase name="testReservationCreation" classname="services.DatabaseServiceTest" time="0.011"/>
   <testcase name="testUserRegistration" classname="services.DatabaseServiceTest" time="0.004"/>
 </testsuite>

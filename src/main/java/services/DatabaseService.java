@@ -22,10 +22,13 @@ public class DatabaseService {
 
     // Veritabanı başlatma
     public static void initialize() {
+        System.out.println("\n=== DATABASE INITIALIZATION STARTED ===");
         try {
             // SQLite sürücüsünü yükle
             Class.forName("org.sqlite.JDBC");
+            System.out.println("✅ SQLite JDBC driver loaded successfully");
             
+            System.out.println("Creating data directory...");
             // Data klasörünü oluştur
             java.io.File dataDir = new java.io.File("data");
             if (!dataDir.exists()) {
@@ -37,14 +40,18 @@ public class DatabaseService {
             createTables();
             loadUsersIntoCache();
             loadVoyagesIntoCache();
-            // System.out.println("Veritabanı başarıyla başlatıldı!");
+            
+            System.out.println("=== DATABASE INITIALIZATION COMPLETED SUCCESSFULLY ===\n");
         } catch (SQLException | ClassNotFoundException e) {
+            System.err.println("❌ DATABASE INITIALIZATION FAILED: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to initialize database: " + e.getMessage());
         }
     }
 
     // Tabloları oluştur
     private static void createTables() {
+        System.out.println("   Creating database tables...");
         try (Statement stmt = connection.createStatement()) {
             // Users tablosu
             stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
@@ -53,6 +60,7 @@ public class DatabaseService {
                 "email TEXT UNIQUE NOT NULL," +
                 "password TEXT NOT NULL," +
                 "user_type TEXT NOT NULL)");
+            System.out.println("   ✅ Users table created/verified");
 
             // Voyages tablosu
             stmt.execute("CREATE TABLE IF NOT EXISTS voyages (" +
@@ -66,6 +74,7 @@ public class DatabaseService {
                 "seat_count INTEGER NOT NULL," +
                 "price REAL NOT NULL," +
                 "seat_arrangement TEXT NOT NULL)");
+            System.out.println("   ✅ Voyages table created/verified");
 
             // Reservations tablosu
             stmt.execute("CREATE TABLE IF NOT EXISTS reservations (" +
@@ -77,6 +86,7 @@ public class DatabaseService {
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 "FOREIGN KEY (user_id) REFERENCES users(id)," +
                 "FOREIGN KEY (voyage_id) REFERENCES voyages(id))");
+            System.out.println("   ✅ Reservations table created/verified");
 
             // Notifications tablosu
             stmt.execute("CREATE TABLE IF NOT EXISTS notifications (" +
@@ -85,18 +95,26 @@ public class DatabaseService {
                 "message TEXT NOT NULL," +
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 "FOREIGN KEY (user_id) REFERENCES users(id))");
+            System.out.println("   ✅ Notifications table created/verified");
+            
+            System.out.println("   ✅ All database tables created/verified successfully");
         } catch (SQLException e) {
+            System.err.println("   ❌ Failed to create tables: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to create tables: " + e.getMessage());
         }
     }
 
     // Kullanıcıları cache'e yükle
     private static void loadUsersIntoCache() {
+        System.out.println("   Loading users from database into cache...");
         String sql = "SELECT * FROM users";
+        int userCount = 0;
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
+                userCount++;
                 User user;
                 if ("admin".equalsIgnoreCase(rs.getString("user_type"))) {
                     user = Admin.getInstance(
@@ -106,6 +124,7 @@ public class DatabaseService {
                         rs.getString("email"),
                         rs.getString("password")
                     );
+                    System.out.println("   - Loaded admin user: " + user.getName() + " (ID: " + user.getId() + ")");
                 } else {
                     user = new User(
                         rs.getString("id"),
@@ -114,16 +133,20 @@ public class DatabaseService {
                         rs.getString("password"),
                         rs.getString("user_type")
                     );
+                    System.out.println("   - Loaded regular user: " + user.getName() + " (ID: " + user.getId() + ")");
                 }
                 usersCache.put(user.getEmail(), user);
             }
         } catch (SQLException e) {
+            System.err.println("   ❌ Failed to load users into cache: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to load users into cache: " + e.getMessage());
         }
     }
 
     // Voyage'ları cache'e yükle
     private static void loadVoyagesIntoCache() {
+        System.out.println("   Loading voyages from database into cache...");
         String sql = "SELECT * FROM voyages";
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -154,12 +177,17 @@ public class DatabaseService {
                 );
             }
         } catch (SQLException e) {
+            System.err.println("   ❌ Failed to load voyages into cache: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to load voyages into cache: " + e.getMessage());
         }
     }
 
     // Kullanıcı ekle
     public static boolean addUser(User user) {
+        System.out.println("\n=== ADDING USER TO DATABASE ===");
+        System.out.println("User details: " + user.getName() + " (" + user.getEmail() + ") - Type: " + user.getUser_type());
+        
         String sql = "INSERT INTO users (name, email, password, user_type) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, user.getName());
@@ -172,6 +200,8 @@ public class DatabaseService {
             usersCache.put(user.getEmail(), user);
             return true;
         } catch (SQLException e) {
+            System.err.println("❌ Failed to add user: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to add user: " + e.getMessage());
         }
     }
@@ -182,9 +212,8 @@ public class DatabaseService {
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, user.getId());
             pstmt.setString(2, user.getName());
-            pstmt.setString(3, user.getEmail());
-            pstmt.setString(4, user.getPassword());
-            pstmt.setString(5, user.getUser_type());
+            pstmt.setString(3, user.getPassword());
+            pstmt.setString(4, user.getUser_type());
             pstmt.executeUpdate();
             
             // Cache'i güncelle
@@ -272,11 +301,19 @@ public class DatabaseService {
 
     // Login kontrolü
     public static User login(String email, String password) {
+        System.out.println("\n=== USER LOGIN ATTEMPT ===");
+        System.out.println("Email: " + email);
+        
         User user = getUserByEmail(email);
         if (user != null && user.getPassword().equals(password)) {
+            System.out.println("✅ Login successful for user: " + user.getName() + " (Type: " + user.getUser_type() + ")");
+            System.out.println("=== LOGIN COMPLETED ===\n");
             return user;
+        } else {
+            System.out.println("❌ Login failed - Invalid credentials");
+            System.out.println("=== LOGIN FAILED ===\n");
+            return null;
         }
-        return null;
     }
 
     // Voyage ekleme fonksiyonu
@@ -298,12 +335,16 @@ public class DatabaseService {
             try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int id = generatedKeys.getInt(1);
-                    System.out.println("DatabaseService.addVoyage başarıyla bitti! Generated ID: " + id);
+                    System.out.println("✅ Voyage added successfully with ID: " + id);
+                    System.out.println("=== VOYAGE ADDITION COMPLETED ===\n");
                     return id;
                 }
             }
+            System.out.println("❌ Failed to get generated ID");
             return -1;
         } catch (SQLException e) {
+            System.err.println("❌ Failed to add voyage: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to add voyage: " + e.getMessage());
         }
     }
@@ -356,6 +397,13 @@ public class DatabaseService {
 
     // Rezervasyon ekle
     public static boolean addReservation(int userId, int voyageId, int seatNumber, String gender) {
+        System.out.println("\n=== ADDING RESERVATION TO DATABASE ===");
+        System.out.println("Reservation details:");
+        System.out.println("  - User ID: " + userId);
+        System.out.println("  - Voyage ID: " + voyageId);
+        System.out.println("  - Seat Number: " + seatNumber);
+        System.out.println("  - Gender: " + gender);
+        
         String sql = "INSERT INTO reservations (user_id, voyage_id, seat_number, gender) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
@@ -363,19 +411,30 @@ public class DatabaseService {
             pstmt.setInt(3, seatNumber);
             pstmt.setString(4, gender);
             pstmt.executeUpdate();
+            System.out.println("✅ Reservation added successfully");
+            System.out.println("=== RESERVATION ADDITION COMPLETED ===\n");
             return true;
         } catch (SQLException e) {
+            System.err.println("❌ Failed to add reservation: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to add reservation: " + e.getMessage());
         }
     }
 
     // Voyage silme fonksiyonu
     public static void deleteVoyageFromDB(int voyageId) {
+        System.out.println("\n=== DELETING VOYAGE FROM DATABASE ===");
+        System.out.println("Voyage ID: " + voyageId);
+        
         String sql = "DELETE FROM voyages WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, voyageId);
-            pstmt.executeUpdate();
+            int affectedRows = pstmt.executeUpdate();
+            System.out.println("✅ Voyage deleted successfully. Affected rows: " + affectedRows);
+            System.out.println("=== VOYAGE DELETION COMPLETED ===\n");
         } catch (SQLException e) {
+            System.err.println("❌ Failed to delete voyage: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to delete voyage: " + e.getMessage());
         }
     }
@@ -411,6 +470,13 @@ public class DatabaseService {
     }
 
     public static void addVoyageToDB(Voyage voyage) {
+        System.out.println("\n=== ADDING VOYAGE OBJECT TO DATABASE ===");
+        System.out.println("Voyage details:");
+        System.out.println("  - ID: " + voyage.getVoyageId());
+        System.out.println("  - Type: " + voyage.getType());
+        System.out.println("  - Firm: " + voyage.getFirm());
+        System.out.println("  - Route: " + voyage.getOrigin() + " → " + voyage.getDestination());
+        
         Connection conn = connection;
         try {
             String sql = "INSERT INTO voyages (type, firm, origin, destination, start_time, arrival_time, seat_count, price, seat_arrangement) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -425,8 +491,12 @@ public class DatabaseService {
                 pstmt.setDouble(8, voyage.getPrice());
                 pstmt.setString(9, voyage.getSeatArrangement());
                 pstmt.executeUpdate();
+                System.out.println("✅ Voyage object added to database successfully");
+                System.out.println("=== VOYAGE OBJECT ADDITION COMPLETED ===\n");
             }
         } catch (SQLException e) {
+            System.err.println("❌ Failed to add voyage to database: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to add voyage to database: " + e.getMessage());
         }
     }
@@ -449,7 +519,9 @@ public class DatabaseService {
                 pstmt.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to update voyage in database: " + e.getMessage());
+            System.err.println("❌ Failed to update voyage: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update voyage: " + e.getMessage());
         }
     }
 
@@ -526,9 +598,9 @@ public class DatabaseService {
             return affected > 0;
      
         } catch (SQLException e) {
-            // System.err.println("Rezervasyon silme hatası: " + e.getMessage());
+            System.err.println("❌ Failed to delete reservation: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Rezervasyon silinirken bir hata oluştu: " + e.getMessage());
+            throw new RuntimeException("Failed to delete reservation: " + e.getMessage());
         }
     }
 
@@ -595,7 +667,11 @@ public class DatabaseService {
 
     // Bildirim ekle
     public static void addNotification(int userId, String notification) {
-        String sql = "INSERT INTO notifications (user_id, message,created_at) VALUES (?, ?,CURRENT_TIMESTAMP)";
+        System.out.println("\n=== ADDING NOTIFICATION TO DATABASE ===");
+        System.out.println("User ID: " + userId);
+        System.out.println("Notification: " + notification);
+        
+        String sql = "INSERT INTO notifications (user_id, message) VALUES (?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
             pstmt.setString(2, notification);
@@ -606,6 +682,8 @@ public class DatabaseService {
                 // System.out.println("Bildirim eklenemedi!");
             }
         } catch (SQLException e) {
+            System.err.println("❌ Failed to add notification: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to add notification: " + e.getMessage());
         }
     }
@@ -808,14 +886,18 @@ public class DatabaseService {
     }
 
     public static void loadAllVoyages() {
+        System.out.println("\n=== LOADING ALL VOYAGES FROM DATABASE ===");
         // Önce mevcut voyage'ları temizle
         Voyage.getVoyageHashMap().clear();
+        System.out.println("   Cleared existing voyage cache");
         
         String sql = "SELECT * FROM voyages";
+        int voyageCount = 0;
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
+                voyageCount++;
                 int voyageId = rs.getInt("id");
                 String type = rs.getString("type");
                 String firm = rs.getString("firm");
@@ -842,8 +924,12 @@ public class DatabaseService {
                 
                 // Voyage'ı hashmap'e ekle
                 Voyage.getVoyageHashMap().put(voyageId, voyage);
+                System.out.println("   - Loaded voyage: " + type + " from " + origin + " to " + destination + " (ID: " + voyageId + ")");
             }
+            System.out.println("✅ Loaded " + voyageCount + " voyages from database into cache");
+            System.out.println("=== VOYAGE LOADING COMPLETED ===\n");
         } catch (SQLException e) {
+            System.err.println("❌ Failed to load voyages: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Voyage verileri yüklenirken hata oluştu: " + e.getMessage());
         }
