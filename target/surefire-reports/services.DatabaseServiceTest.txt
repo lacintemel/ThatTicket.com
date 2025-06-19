@@ -1,4 +1,16 @@
 -------------------------------------------------------------------------------
 Test set: services.DatabaseServiceTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.319 s - in services.DatabaseServiceTest
+Tests run: 3, Failures: 0, Errors: 3, Skipped: 0, Time elapsed: 9.738 s <<< FAILURE! - in services.DatabaseServiceTest
+testVoyageCreation  Time elapsed: 3.453 s  <<< ERROR!
+java.lang.RuntimeException: Failed to clean database: [SQLITE_BUSY] The database file is locked (database is locked)
+	at services.DatabaseServiceTest.setUp(DatabaseServiceTest.java:26)
+
+testReservationCreation  Time elapsed: 3.136 s  <<< ERROR!
+java.lang.RuntimeException: Failed to clean database: [SQLITE_BUSY] The database file is locked (database is locked)
+	at services.DatabaseServiceTest.setUp(DatabaseServiceTest.java:26)
+
+testUserRegistration  Time elapsed: 3.149 s  <<< ERROR!
+java.lang.RuntimeException: Failed to clean database: [SQLITE_BUSY] The database file is locked (database is locked)
+	at services.DatabaseServiceTest.setUp(DatabaseServiceTest.java:26)
+

@@ -57,6 +57,29 @@ public class MainView extends JPanel {
         this.cachedVoyages = new ArrayList<>();
         this.lastVoyageUpdate = 0;
         
+        // Ensure proper customer object if user is a customer
+        if (!isAdmin && user != null) {
+            if (user instanceof Customer) {
+                this.customer = (Customer) user;
+            } else if ("Customer".equals(user.getUser_type())) {
+                // Re-fetch customer data from database to ensure we have the complete object
+                try {
+                    User dbUser = DatabaseService.getUserByEmail(user.getEmail());
+                    if (dbUser != null) {
+                        this.customer = new Customer(
+                            dbUser.getId(),
+                            dbUser.getName(),
+                            "", // Phone number can be empty initially
+                            dbUser.getEmail(),
+                            dbUser.getPassword()
+                        );
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
         setLayout(new BorderLayout());
         initializeUI();
     }
@@ -972,6 +995,24 @@ public class MainView extends JPanel {
 
     public User getUser() {
         return user;
+    }
+
+    public void setTransportMode(boolean newBusMode) {
+        this.isBusMode = newBusMode;
+        dynamicTitle.setText(isBusMode ? "Bus Schedules" : "Flight Schedules");
+        
+        // Clear and reload trips based on new mode
+        allTrips.clear();
+        if (isBusMode) {
+            allTrips.addAll(DatabaseService.getAllBusVoyages());
+        } else {
+            allTrips.addAll(DatabaseService.getAllFlightVoyages());
+        }
+        
+        // Update UI
+        updateTripList();
+        revalidate();
+        repaint();
     }
 
     public boolean isBusMode() {

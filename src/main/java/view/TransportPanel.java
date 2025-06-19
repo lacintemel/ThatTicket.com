@@ -129,7 +129,15 @@ public class TransportPanel extends JPanel {
             toggleButton.setText(isBusMode ? "Switch to Airplane" : "Switch to Bus");
             setBackground(isBusMode ? busColor : planeColor);
             updateTransportMode();
-            notifyTransportModeChanged();
+            
+            // Ensure complete UI refresh
+            revalidate();
+            repaint();
+            
+            // Notify listeners with a slight delay to ensure UI updates are complete
+            SwingUtilities.invokeLater(() -> {
+                notifyTransportModeChanged();
+            });
         });
 
         // Create center panel for icon and slogan

@@ -9,6 +9,7 @@ import com.mycompany.aoopproject.AOOPProject;
 import factorys.VoyageFactory;
 import com.toedter.calendar.JDateChooser;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class AdminVoyagePanel extends JPanel {
     private Admin admin;
@@ -214,11 +215,11 @@ public class AdminVoyagePanel extends JPanel {
         backButton.setPreferredSize(new Dimension(170, 36));
         backButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12)); // Added vertical padding
         backButton.addActionListener(e -> {
-            System.out.println("Admin object class in AdminVoyagePanel: " + admin.getClass().getName()); // DEBUG
             if (mainFrame instanceof AOOPProject) {
-                MainView mv = new MainView(admin, isBusMode, mainFrame);
-                mv.setVisible(true);
-                ((AOOPProject) mainFrame).showMainView(mv);
+                SwingUtilities.invokeLater(() -> {
+                    this.setVisible(false);
+                    ((AOOPProject) mainFrame).showMainView(mainView);
+                });
             }
         });
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10)); // Added horizontal and vertical gaps
@@ -405,6 +406,19 @@ public class AdminVoyagePanel extends JPanel {
                 return;
             }
 
+            // Kalkış tarihi ve saati geçmiş mi kontrolü
+            try {
+                Date now = new Date();
+                Date startDateTime = sdf.parse(startTime);
+                if (startDateTime.before(now)) {
+                    JOptionPane.showMessageDialog(this, "Kalkış tarihi ve saati geçmiş olamaz!", "Hata", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Tarih kontrolünde hata oluştu!", "Hata", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             if (voyageToUpdate == null) {
                 // Create a new voyage using AddVoyageCommand
                 Voyage newVoyage = VoyageFactory.createVoyage(
@@ -427,9 +441,13 @@ public class AdminVoyagePanel extends JPanel {
                         "Success", 
                         JOptionPane.INFORMATION_MESSAGE);
                     mainView.updateTripList();
-                    mainFrame.setContentPane(mainView);
-                    mainFrame.revalidate();
-                    mainFrame.repaint();
+                    mainView.setTransportMode(isBusMode);
+                    if (mainFrame instanceof AOOPProject) {
+                        SwingUtilities.invokeLater(() -> {
+                            this.setVisible(false);
+                            ((AOOPProject) mainFrame).showMainView(mainView);
+                        });
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this, 
                         "An error occurred while creating the trip!", 
@@ -460,7 +478,10 @@ public class AdminVoyagePanel extends JPanel {
                         
                     // Ana ekrana dön
                     if (mainFrame instanceof AOOPProject) {
-                        ((AOOPProject) mainFrame).showMainView(new MainView(admin, isBusMode, mainFrame));
+                        SwingUtilities.invokeLater(() -> {
+                            this.setVisible(false);
+                            ((AOOPProject) mainFrame).showMainView(mainView);
+                        });
                     }
                 } catch (Exception ex2) {
                     ex2.printStackTrace();
@@ -538,7 +559,30 @@ public class AdminVoyagePanel extends JPanel {
         this.isBusMode = isBusMode;
         if (typeCombo != null) {
             typeCombo.setSelectedItem(isBusMode ? "Bus" : "Flight");
+            
+            // Update seat arrangement options based on mode
+            seatArrangementCombo.removeAllItems();
+            if (isBusMode) {
+                seatArrangementCombo.addItem("2+1");
+                seatArrangementCombo.addItem("2+2");
+                seatArrangementCombo.setSelectedItem("2+1");
+                seatArrangementCombo.setEnabled(true);
+                firmField.setVisible(true);
+                planeNameCombo.setVisible(false);
+            } else {
+                seatArrangementCombo.addItem("3+3");
+                seatArrangementCombo.setSelectedItem("3+3");
+                seatArrangementCombo.setEnabled(false);
+                firmField.setVisible(false);
+                planeNameCombo.setVisible(true);
+            }
+            
+            // Update seat count based on new mode
+            updateSeatCount();
         }
+        updateThemeColor(isBusMode);
+        revalidate();
+        repaint();
     }
 
     private void updateThemeColor(boolean isBus) {

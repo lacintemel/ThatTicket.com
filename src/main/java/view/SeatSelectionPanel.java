@@ -196,10 +196,22 @@ public class SeatSelectionPanel extends JPanel {
         reserveButton.setEnabled(false);
         reserveButton.addActionListener(e -> {
             // Admin ise veya müşteri null ise hata ver
-            if (customer == null) {
+            if (customer == null || !(customer instanceof models.Customer)) {
                 JOptionPane.showMessageDialog(this, "Rezervasyon yapabilmek için giriş yapmalısınız!", "Hata", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            
+            // Verify customer exists in database
+            try {
+                if (!services.DatabaseService.verifyCustomerExists(Integer.parseInt(customer.getId()))) {
+                    JOptionPane.showMessageDialog(this, "Müşteri kaydı bulunamadı! Lütfen tekrar giriş yapın.", "Hata", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Müşteri doğrulama hatası: " + ex.getMessage(), "Hata", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
             if ("Admin".equalsIgnoreCase(customer.getUser_type())) {
                 JOptionPane.showMessageDialog(this, "Admin kullanıcı rezervasyon yapamaz!", "Hata", JOptionPane.ERROR_MESSAGE);
                 return;

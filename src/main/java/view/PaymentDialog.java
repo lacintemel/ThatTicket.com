@@ -135,81 +135,97 @@ public class PaymentDialog extends JDialog {
         payButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         payButton.setPreferredSize(new Dimension(120, 38));
         payButton.addActionListener(e -> {
-            // Loading dialog'u göster
-            CircularProgressIndicator loadingDialog = new CircularProgressIndicator((Frame) SwingUtilities.getWindowAncestor(this), "Ödeme işlemi gerçekleştiriliyor...");
-            
-            // Ödeme işlemini arka planda yap
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                @Override
-                protected Void doInBackground() throws Exception {
-                    try {
-                        // Rezervasyonları veritabanına kaydet
-                        for (SeatSelectionPanel.SelectedSeat seat : selectedSeats) {
-                            DatabaseService.addReservation(
-                                Integer.parseInt(customer.getId()),
-                                voyageId,
-                                seat.seatNum,
-                                seat.gender
-                            );
-                        }
-                        
-                        // Başarılı rezervasyon bildirimi ekle
-                        models.Voyage voyage = models.Voyage.getVoyageHashMap().get(voyageId);
-                        // Call makeReservation for each selected seat through the Customer object
-                        for (view.SeatSelectionPanel.SelectedSeat seat : selectedSeats) {
-                            customer.makeReservation(voyage, seat.seatNum);
-                        }
-                        
-                        return null;
-                    } catch (Exception ex) {
-                        throw ex;
-                    }
+            // Verify customer exists in database first
+            try {
+                if (customer == null || customer.getId() == null) {
+                    JOptionPane.showMessageDialog(this, "Müşteri bilgisi bulunamadı!", "Hata", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
                 
-                @Override
-                protected void done() {
-                    try {
-                        // Loading dialog'u kapat
-                        loadingDialog.dispose();
-                        
-                        // Başarılı mesajı göster
-                        JOptionPane.showMessageDialog(
-                            PaymentDialog.this,
-                            "Ödeme başarıyla tamamlandı!",
-                            "Başarılı",
-                            JOptionPane.INFORMATION_MESSAGE
-                        );
-                        
-                        // Rezervasyonlar panelini güncelle
-                        if (reservationsPanel != null) {
-                            reservationsPanel.removeAll();
-                            reservationsPanel.revalidate();
-                            reservationsPanel.repaint();
-                        }
-                        
-                        // Pencereyi kapat
-                        Window window = SwingUtilities.getWindowAncestor(PaymentDialog.this);
-                        if (window != null) {
-                            window.dispose();
-                        }
-                        
-                        // Ana görünümü göster
-                        if (mainView != null) {
-                            mainView.setVisible(true);
-                        }
-                    } catch (Exception ex) {
-                        loadingDialog.dispose();
-                        JOptionPane.showMessageDialog(
-                            PaymentDialog.this,
-                            "Ödeme işlemi sırasında bir hata oluştu: " + ex.getMessage(),
-                            "Hata",
-                            JOptionPane.ERROR_MESSAGE
-                        );
-                    }
+                // Verify customer exists in database
+                if (!DatabaseService.verifyCustomerExists(Integer.parseInt(customer.getId()))) {
+                    JOptionPane.showMessageDialog(this, "Müşteri kaydı bulunamadı! Lütfen tekrar giriş yapın.", "Hata", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-            };
-            
-            worker.execute();
+
+                // Loading dialog'u göster
+                CircularProgressIndicator loadingDialog = new CircularProgressIndicator((Frame) SwingUtilities.getWindowAncestor(this), "Ödeme işlemi gerçekleştiriliyor...");
+                
+                // Ödeme işlemini arka planda yap
+                SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        try {
+                            // Rezervasyonları veritabanına kaydet
+                            for (SeatSelectionPanel.SelectedSeat seat : selectedSeats) {
+                                DatabaseService.addReservation(
+                                    Integer.parseInt(customer.getId()),
+                                    voyageId,
+                                    seat.seatNum,
+                                    seat.gender
+                                );
+                            }
+                            
+                            // Başarılı rezervasyon bildirimi ekle
+                            models.Voyage voyage = models.Voyage.getVoyageHashMap().get(voyageId);
+                            // Call makeReservation for each selected seat through the Customer object
+                            for (view.SeatSelectionPanel.SelectedSeat seat : selectedSeats) {
+                                customer.makeReservation(voyage, seat.seatNum);
+                            }
+                            
+                            return null;
+                        } catch (Exception ex) {
+                            throw ex;
+                        }
+                    }
+                    
+                    @Override
+                    protected void done() {
+                        try {
+                            // Loading dialog'u kapat
+                            loadingDialog.dispose();
+                            
+                            // Başarılı mesajı göster
+                            JOptionPane.showMessageDialog(
+                                PaymentDialog.this,
+                                "Ödeme başarıyla tamamlandı!",
+                                "Başarılı",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                            
+                            // Rezervasyonlar panelini güncelle
+                            if (reservationsPanel != null) {
+                                reservationsPanel.removeAll();
+                                reservationsPanel.revalidate();
+                                reservationsPanel.repaint();
+                            }
+                            
+                            // Pencereyi kapat
+                            Window window = SwingUtilities.getWindowAncestor(PaymentDialog.this);
+                            if (window != null) {
+                                window.dispose();
+                            }
+                            
+                            // Ana görünümü göster
+                            if (mainView != null) {
+                                mainView.setVisible(true);
+                            }
+                        } catch (Exception ex) {
+                            loadingDialog.dispose();
+                            JOptionPane.showMessageDialog(
+                                PaymentDialog.this,
+                                "Ödeme işlemi sırasında bir hata oluştu: " + ex.getMessage(),
+                                "Hata",
+                                JOptionPane.ERROR_MESSAGE
+                            );
+                        }
+                    }
+                };
+                
+                worker.execute();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         });
 
         buttonPanel.add(cancelButton);

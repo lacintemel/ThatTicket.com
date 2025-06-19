@@ -934,4 +934,19 @@ public class DatabaseService {
             throw new RuntimeException("Voyage verileri yüklenirken hata oluştu: " + e.getMessage());
         }
     }
+
+    public static boolean verifyCustomerExists(int userId) {
+        String sql = "SELECT COUNT(*) FROM users WHERE id = ? AND user_type = 'Customer'";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to verify customer: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

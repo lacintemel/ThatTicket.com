@@ -12,10 +12,7 @@ import models.Voyage;
  *
  * @author enesaltin
  */
-public class VoyageFactory {
-    
-    
-    
+public class VoyageFactory { 
     public static Voyage createVoyage(int voyageId, String type, String firm, String origin, String destination, String startTime, String arrivalTime, int seatCount, double price, String seatArrangement) {
         Voyage voyage;
         if (type.equalsIgnoreCase("Bus")) {
